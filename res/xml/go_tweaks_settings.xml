@@ -30,6 +30,11 @@
             android:title="@string/go_tweak_dexopt_title"
             android:summary="@string/go_tweak_dexopt_summary" />
 
+        <SwitchPreferenceCompat
+            android:key="go_tweak_gpu_clock_cap"
+            android:title="@string/go_tweak_gpu_clock_cap_title"
+            android:summary="@string/go_tweak_gpu_clock_cap_summary" />
+
     </PreferenceCategory>
 
     <PreferenceCategory
