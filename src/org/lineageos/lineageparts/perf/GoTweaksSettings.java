@@ -23,19 +23,23 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
 /**
  * Individually user-toggleable Android-Go-style low-RAM tunables, plus other
  * pepito-specific tweaks. See PLAN-perf-battery.md. Each toggle writes a
- * persist.gotweak.* property; device/xiaomi/mithorium-common's
- * init.gotweaks.rc does the actual ro.config.low_ram / dalvik.vm.* /
- * ro.lmk.* / pm.dexopt.* / kgsl-3d0 max_pwrlevel writes.
+ * persist.gotweak.* property; most are applied by
+ * device/xiaomi/mithorium-common's init.gotweaks.rc (ro.config.low_ram /
+ * dalvik.vm.* / ro.lmk.* / pm.dexopt.* / kgsl-3d0 max_pwrlevel writes) -
+ * zram_zstd is the exception, read directly by init.qcom.post_boot.sh's
+ * configure_zram_parameters() instead, since that's the existing code that
+ * already owns zram's full setup (disksize/mkswap/swapon) lifecycle.
  *
- * Four of the five are gated behind a reboot prompt: three are backed by
- * ro.* or zygote/lmkd-read-once properties that only take effect on the next
- * boot either way, and dexopt needs a reboot to fully revert when turned
- * back off (its "on" trigger applies live, but there is no live "off"
- * trigger - turning it off just lets the next boot's static defaults take
- * over unmodified). Uniform reboot messaging keeps that asymmetry from being
- * confusing. gpu_clock_cap is the exception: it's a plain sysfs write with a
- * real trigger in both directions, so it applies immediately and skips the
- * reboot prompt entirely.
+ * Five of the six are gated behind a reboot prompt: low_ram/heap_trim/lmk are
+ * backed by ro.* or zygote/lmkd-read-once properties that only take effect on
+ * the next boot either way; zram_zstd is read once by post_boot.sh while
+ * setting up zram as swap, same story; and dexopt needs a reboot to fully
+ * revert when turned back off (its "on" trigger applies live, but there is no
+ * live "off" trigger - turning it off just lets the next boot's static
+ * defaults take over unmodified). Uniform reboot messaging keeps that last
+ * asymmetry from being confusing. gpu_clock_cap is the one exception: it's a
+ * plain sysfs write with a real trigger in both directions, so it applies
+ * immediately and skips the reboot prompt entirely.
  *
  * The PepitoLauncher2 entry is informational only, not a toggle: it's
  * already installed and selectable today (device.mk ships it alongside
@@ -51,6 +55,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_LMK = "go_tweak_lmk";
     private static final String KEY_DEXOPT = "go_tweak_dexopt";
     private static final String KEY_GPU_CLOCK_CAP = "go_tweak_gpu_clock_cap";
+    private static final String KEY_ZRAM_ZSTD = "go_tweak_zram_zstd";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
 
     private static final String PROP_LOW_RAM = "persist.gotweak.low_ram";
@@ -58,12 +63,14 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_LMK = "persist.gotweak.lmk";
     private static final String PROP_DEXOPT = "persist.gotweak.dexopt";
     private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
+    private static final String PROP_ZRAM_ZSTD = "persist.gotweak.zram_zstd";
 
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
     private SwitchPreferenceCompat mLmkPref;
     private SwitchPreferenceCompat mDexoptPref;
     private SwitchPreferenceCompat mGpuClockCapPref;
+    private SwitchPreferenceCompat mZramZstdPref;
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -79,6 +86,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mLmkPref = prefSet.findPreference(KEY_LMK);
         mDexoptPref = prefSet.findPreference(KEY_DEXOPT);
         mGpuClockCapPref = prefSet.findPreference(KEY_GPU_CLOCK_CAP);
+        mZramZstdPref = prefSet.findPreference(KEY_ZRAM_ZSTD);
 
         final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
         if (pepitoLauncher2Pref != null) {
@@ -93,12 +101,14 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mLmkPref.setChecked(SystemProperties.getBoolean(PROP_LMK, false));
         mDexoptPref.setChecked(SystemProperties.getBoolean(PROP_DEXOPT, false));
         mGpuClockCapPref.setChecked(SystemProperties.getBoolean(PROP_GPU_CLOCK_CAP, false));
+        mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, false));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
         mLmkPref.setOnPreferenceChangeListener(this);
         mDexoptPref.setOnPreferenceChangeListener(this);
         mGpuClockCapPref.setOnPreferenceChangeListener(this);
+        mZramZstdPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -121,6 +131,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
             SystemProperties.set(PROP_LMK, value);
         } else if (preference == mDexoptPref) {
             SystemProperties.set(PROP_DEXOPT, value);
+        } else if (preference == mZramZstdPref) {
+            SystemProperties.set(PROP_ZRAM_ZSTD, value);
         } else {
             return false;
         }
