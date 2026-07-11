@@ -504,6 +504,11 @@
     <string name="status_bar_brightness_slider_position_top">Top</string>
     <string name="status_bar_brightness_slider_position_bottom">Bottom</string>
 
+    <!-- Status bar - Volume -->
+    <string name="status_bar_volume_category">Volume</string>
+    <string name="status_bar_volume_slider_title">Volume slider</string>
+    <string name="status_bar_volume_slider_summary">Adjust volume from the Quick Settings, with access to all volume streams</string>
+
     <!-- Status bar - Network Traffic -->
     <string name="network_traffic_settings_title">Network traffic monitor</string>
     <string name="network_traffic_settings_summary">Show current network traffic levels in the status bar</string>
