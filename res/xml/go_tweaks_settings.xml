@@ -48,4 +48,14 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:title="@string/go_tweaks_launcher_category">
+
+        <Preference
+            android:key="go_tweak_pepitolauncher2_info"
+            android:title="@string/go_tweak_pepitolauncher2_title"
+            android:summary="@string/go_tweak_pepitolauncher2_summary" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>
