@@ -33,6 +33,12 @@
           android:fragment="org.lineageos.lineageparts.input.ButtonSettings"
           lineage:xmlRes="@xml/button_settings" />
 
+    <part android:key="go_tweaks"
+          android:title="@string/go_tweaks_title"
+          android:summary="@string/go_tweaks_summary"
+          android:fragment="org.lineageos.lineageparts.perf.GoTweaksSettings"
+          lineage:xmlRes="@xml/go_tweaks_settings" />
+
     <part android:key="contributors"
           android:title="@string/contributors_cloud_fragment_title"
           android:fragment="org.lineageos.lineageparts.contributors.ContributorsCloudFragment"

@@ -85,6 +85,23 @@
     <string name="charging_control_limit_title">Limit</string>
     <string name="charging_control_limit_summary">Current limit: %d%%</string>
 
+    <!-- Go tweaks (low-RAM tuning) settings -->
+    <string name="go_tweaks_title">Memory tweaks</string>
+    <string name="go_tweaks_summary">Low-RAM tuning options</string>
+    <string name="go_tweaks_category">Low-RAM tuning</string>
+    <string name="go_tweak_low_ram_title">Enable low-RAM mode</string>
+    <string name="go_tweak_low_ram_summary">Reduces memory use system-wide. Also removes Picture-in-Picture, the voice-recognizer feature flag, and support for activities on a second display.</string>
+    <string name="go_tweak_heap_trim_title">Reduce app memory limits</string>
+    <string name="go_tweak_heap_trim_summary">Lowers how much memory each app can use. Apps that need large amounts of memory may run less smoothly.</string>
+    <string name="go_tweak_lmk_title">Close background apps sooner</string>
+    <string name="go_tweak_lmk_summary">Frees memory faster by closing background apps more aggressively.</string>
+    <string name="go_tweak_dexopt_title">Reduce app compile cache size</string>
+    <string name="go_tweak_dexopt_summary">Trades a small amount of app-launch speed for less storage and memory use.</string>
+    <string name="go_tweaks_reboot_title">Restart required</string>
+    <string name="go_tweaks_reboot_message">This change takes effect after restarting your device.</string>
+    <string name="go_tweaks_reboot_now">Restart now</string>
+    <string name="go_tweaks_reboot_later">Later</string>
+
     <!-- Battery light settings -->
     <string name="battery_light_title">Battery light</string>
     <string name="battery_light_enable_title">Enable battery light</string>

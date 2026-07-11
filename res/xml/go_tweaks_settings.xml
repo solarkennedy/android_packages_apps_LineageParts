@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="go_tweaks"
+    android:title="@string/go_tweaks_title">
+
+    <PreferenceCategory
+        android:title="@string/go_tweaks_category">
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_low_ram"
+            android:title="@string/go_tweak_low_ram_title"
+            android:summary="@string/go_tweak_low_ram_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_heap_trim"
+            android:title="@string/go_tweak_heap_trim_title"
+            android:summary="@string/go_tweak_heap_trim_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_lmk"
+            android:title="@string/go_tweak_lmk_title"
+            android:summary="@string/go_tweak_lmk_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_dexopt"
+            android:title="@string/go_tweak_dexopt_title"
+            android:summary="@string/go_tweak_dexopt_summary" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
