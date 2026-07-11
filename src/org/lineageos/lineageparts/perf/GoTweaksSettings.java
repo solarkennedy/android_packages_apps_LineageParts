@@ -7,9 +7,11 @@ package org.lineageos.lineageparts.perf;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemProperties;
+import android.provider.Settings;
 
 import androidx.preference.Preference;
 import androidx.preference.PreferenceScreen;
@@ -34,6 +36,12 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * confusing. gpu_clock_cap is the exception: it's a plain sysfs write with a
  * real trigger in both directions, so it applies immediately and skips the
  * reboot prompt entirely.
+ *
+ * The PepitoLauncher2 entry is informational only, not a toggle: it's
+ * already installed and selectable today (device.mk ships it alongside
+ * Trebuchet, not as default), and there's no simple flag to flip - Android's
+ * default-Home-app assignment is a system Role, not a boolean. Tapping it
+ * just opens Settings' Home app picker (ACTION_HOME_SETTINGS).
  */
 public class GoTweaksSettings extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
@@ -43,6 +51,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_LMK = "go_tweak_lmk";
     private static final String KEY_DEXOPT = "go_tweak_dexopt";
     private static final String KEY_GPU_CLOCK_CAP = "go_tweak_gpu_clock_cap";
+    private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
 
     private static final String PROP_LOW_RAM = "persist.gotweak.low_ram";
     private static final String PROP_HEAP_TRIM = "persist.gotweak.heap_trim";
@@ -70,6 +79,14 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mLmkPref = prefSet.findPreference(KEY_LMK);
         mDexoptPref = prefSet.findPreference(KEY_DEXOPT);
         mGpuClockCapPref = prefSet.findPreference(KEY_GPU_CLOCK_CAP);
+
+        final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
+        if (pepitoLauncher2Pref != null) {
+            pepitoLauncher2Pref.setOnPreferenceClickListener(preference -> {
+                startActivity(new Intent(Settings.ACTION_HOME_SETTINGS));
+                return true;
+            });
+        }
 
         mLowRamPref.setChecked(SystemProperties.getBoolean(PROP_LOW_RAM, false));
         mHeapTrimPref.setChecked(SystemProperties.getBoolean(PROP_HEAP_TRIM, false));
