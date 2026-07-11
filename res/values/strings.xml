@@ -87,7 +87,7 @@
 
     <!-- Go tweaks (low-RAM tuning) settings -->
     <string name="go_tweaks_title">Pepito Tweaks</string>
-    <string name="go_tweaks_summary">Low-RAM tuning options</string>
+    <string name="go_tweaks_summary">Low-RAM tuning and other Pepito-specific options</string>
     <string name="go_tweaks_category">Low-RAM tuning</string>
     <string name="go_tweak_low_ram_title">Enable low-RAM mode</string>
     <string name="go_tweak_low_ram_summary">Sets ro.config.low_ram=true (unset by default). Lowers ActivityManager memory thresholds and cache sizes system-wide. Also drops any hardware feature flagged notLowRam=\"true\" in the installed handheld_core_hardware.xml: android.software.picture_in_picture, voice_recognizers, and activities_on_secondary_displays. android.software.app_widgets is unaffected. ro.* properties lock on first write each boot, so this only takes effect after a restart.</string>
