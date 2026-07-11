@@ -19,18 +19,21 @@ import org.lineageos.lineageparts.R;
 import org.lineageos.lineageparts.SettingsPreferenceFragment;
 
 /**
- * Individually user-toggleable Android-Go-style low-RAM tunables. See
- * PLAN-perf-battery.md. Each toggle writes a persist.gotweak.* property;
- * device/xiaomi/mithorium-common's init.gotweaks.rc does the actual
- * ro.config.low_ram / dalvik.vm.* / ro.lmk.* / pm.dexopt.* writes.
+ * Individually user-toggleable Android-Go-style low-RAM tunables, plus other
+ * pepito-specific tweaks. See PLAN-perf-battery.md. Each toggle writes a
+ * persist.gotweak.* property; device/xiaomi/mithorium-common's
+ * init.gotweaks.rc does the actual ro.config.low_ram / dalvik.vm.* /
+ * ro.lmk.* / pm.dexopt.* / kgsl-3d0 max_pwrlevel writes.
  *
- * All four are gated behind a reboot prompt: three are backed by ro.* or
- * zygote/lmkd-read-once properties that only take effect on the next boot
- * either way, and the fourth (dexopt) needs a reboot to fully revert when
- * turned back off (its "on" trigger applies live, but there is no live
- * "off" trigger - turning it off just lets the next boot's static defaults
- * take over unmodified). Uniform reboot messaging keeps that asymmetry from
- * being confusing.
+ * Four of the five are gated behind a reboot prompt: three are backed by
+ * ro.* or zygote/lmkd-read-once properties that only take effect on the next
+ * boot either way, and dexopt needs a reboot to fully revert when turned
+ * back off (its "on" trigger applies live, but there is no live "off"
+ * trigger - turning it off just lets the next boot's static defaults take
+ * over unmodified). Uniform reboot messaging keeps that asymmetry from being
+ * confusing. gpu_clock_cap is the exception: it's a plain sysfs write with a
+ * real trigger in both directions, so it applies immediately and skips the
+ * reboot prompt entirely.
  */
 public class GoTweaksSettings extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
@@ -39,16 +42,19 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_HEAP_TRIM = "go_tweak_heap_trim";
     private static final String KEY_LMK = "go_tweak_lmk";
     private static final String KEY_DEXOPT = "go_tweak_dexopt";
+    private static final String KEY_GPU_CLOCK_CAP = "go_tweak_gpu_clock_cap";
 
     private static final String PROP_LOW_RAM = "persist.gotweak.low_ram";
     private static final String PROP_HEAP_TRIM = "persist.gotweak.heap_trim";
     private static final String PROP_LMK = "persist.gotweak.lmk";
     private static final String PROP_DEXOPT = "persist.gotweak.dexopt";
+    private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
 
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
     private SwitchPreferenceCompat mLmkPref;
     private SwitchPreferenceCompat mDexoptPref;
+    private SwitchPreferenceCompat mGpuClockCapPref;
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -63,22 +69,32 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mHeapTrimPref = prefSet.findPreference(KEY_HEAP_TRIM);
         mLmkPref = prefSet.findPreference(KEY_LMK);
         mDexoptPref = prefSet.findPreference(KEY_DEXOPT);
+        mGpuClockCapPref = prefSet.findPreference(KEY_GPU_CLOCK_CAP);
 
         mLowRamPref.setChecked(SystemProperties.getBoolean(PROP_LOW_RAM, false));
         mHeapTrimPref.setChecked(SystemProperties.getBoolean(PROP_HEAP_TRIM, false));
         mLmkPref.setChecked(SystemProperties.getBoolean(PROP_LMK, false));
         mDexoptPref.setChecked(SystemProperties.getBoolean(PROP_DEXOPT, false));
+        mGpuClockCapPref.setChecked(SystemProperties.getBoolean(PROP_GPU_CLOCK_CAP, false));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
         mLmkPref.setOnPreferenceChangeListener(this);
         mDexoptPref.setOnPreferenceChangeListener(this);
+        mGpuClockCapPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
     public boolean onPreferenceChange(final Preference preference, final Object newValue) {
         final boolean enabled = (Boolean) newValue;
         final String value = enabled ? "1" : "0";
+
+        if (preference == mGpuClockCapPref) {
+            // Plain sysfs write via init.gotweaks.rc, live in both
+            // directions - no reboot prompt needed.
+            SystemProperties.set(PROP_GPU_CLOCK_CAP, value);
+            return true;
+        }
 
         if (preference == mLowRamPref) {
             SystemProperties.set(PROP_LOW_RAM, value);
