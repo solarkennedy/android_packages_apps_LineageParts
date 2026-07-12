@@ -47,13 +47,14 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * default-Home-app assignment is a system Role, not a boolean. Tapping it
  * just opens Settings' Home app picker (ACTION_HOME_SETTINGS).
  *
- * battery_saver_cpu_hook is a kill switch (default ON) for
- * GotweaksBatterySaverReceiver (XiaomiParts), which auto-offlines the
- * cpu0-3 performance cluster whenever Battery Saver is on. Also live, no
- * reboot - and unlike a plain property write, flipping it here immediately
- * recomputes and sets cpu_cluster_saver against the *current*
- * isPowerSaveMode(), so disabling it restores all 8 cores right away
- * instead of waiting for the next Battery Saver change.
+ * battery_saver_hook is a kill switch (default ON) for
+ * GotweaksBatterySaverReceiver (XiaomiParts) - our own "extreme" Battery
+ * Saver, which offlines the cpu0-3 performance cluster and caps the GPU
+ * clock whenever stock Battery Saver is on. Also live, no reboot - and
+ * unlike a plain property write, flipping it here immediately recomputes
+ * and sets both cpu_cluster_saver and battery_saver_gpu_cap against the
+ * *current* isPowerSaveMode(), so disabling it reverses both effects right
+ * away instead of waiting for the next Battery Saver change.
  */
 public class GoTweaksSettings extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
@@ -64,7 +65,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_DEXOPT = "go_tweak_dexopt";
     private static final String KEY_GPU_CLOCK_CAP = "go_tweak_gpu_clock_cap";
     private static final String KEY_ZRAM_ZSTD = "go_tweak_zram_zstd";
-    private static final String KEY_BATTERY_SAVER_CPU_HOOK = "go_tweak_battery_saver_cpu_hook";
+    private static final String KEY_BATTERY_SAVER_HOOK = "go_tweak_battery_saver_hook";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
 
     private static final String PROP_LOW_RAM = "persist.gotweak.low_ram";
@@ -73,10 +74,12 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_DEXOPT = "persist.gotweak.dexopt";
     private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
     private static final String PROP_ZRAM_ZSTD = "persist.gotweak.zram_zstd";
-    private static final String PROP_BATTERY_SAVER_CPU_HOOK =
-            "persist.gotweak.battery_saver_cpu_hook";
+    private static final String PROP_BATTERY_SAVER_HOOK =
+            "persist.gotweak.battery_saver_hook";
     private static final String PROP_CPU_CLUSTER_SAVER =
             "persist.gotweak.cpu_cluster_saver";
+    private static final String PROP_BATTERY_SAVER_GPU_CAP =
+            "persist.gotweak.battery_saver_gpu_cap";
 
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
@@ -84,7 +87,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mDexoptPref;
     private SwitchPreferenceCompat mGpuClockCapPref;
     private SwitchPreferenceCompat mZramZstdPref;
-    private SwitchPreferenceCompat mBatterySaverCpuHookPref;
+    private SwitchPreferenceCompat mBatterySaverHookPref;
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -101,7 +104,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mDexoptPref = prefSet.findPreference(KEY_DEXOPT);
         mGpuClockCapPref = prefSet.findPreference(KEY_GPU_CLOCK_CAP);
         mZramZstdPref = prefSet.findPreference(KEY_ZRAM_ZSTD);
-        mBatterySaverCpuHookPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU_HOOK);
+        mBatterySaverHookPref = prefSet.findPreference(KEY_BATTERY_SAVER_HOOK);
 
         final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
         if (pepitoLauncher2Pref != null) {
@@ -117,8 +120,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mDexoptPref.setChecked(SystemProperties.getBoolean(PROP_DEXOPT, false));
         mGpuClockCapPref.setChecked(SystemProperties.getBoolean(PROP_GPU_CLOCK_CAP, false));
         mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, false));
-        mBatterySaverCpuHookPref.setChecked(
-                SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_HOOK, true));
+        mBatterySaverHookPref.setChecked(
+                SystemProperties.getBoolean(PROP_BATTERY_SAVER_HOOK, true));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
@@ -126,7 +129,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mDexoptPref.setOnPreferenceChangeListener(this);
         mGpuClockCapPref.setOnPreferenceChangeListener(this);
         mZramZstdPref.setOnPreferenceChangeListener(this);
-        mBatterySaverCpuHookPref.setOnPreferenceChangeListener(this);
+        mBatterySaverHookPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -141,8 +144,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
             return true;
         }
 
-        if (preference == mBatterySaverCpuHookPref) {
-            SystemProperties.set(PROP_BATTERY_SAVER_CPU_HOOK, value);
+        if (preference == mBatterySaverHookPref) {
+            SystemProperties.set(PROP_BATTERY_SAVER_HOOK, value);
             // Recompute immediately rather than waiting for the next Battery
             // Saver change - GotweaksBatterySaverReceiver does the same
             // (enabled && isPowerSaveMode()) check; keep both in sync.
@@ -151,6 +154,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
                     ? null : context.getSystemService(PowerManager.class);
             final boolean cap = enabled && pm != null && pm.isPowerSaveMode();
             SystemProperties.set(PROP_CPU_CLUSTER_SAVER, cap ? "1" : "0");
+            SystemProperties.set(PROP_BATTERY_SAVER_GPU_CAP, cap ? "1" : "0");
             return true;
         }
 
