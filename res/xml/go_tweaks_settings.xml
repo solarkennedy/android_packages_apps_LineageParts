@@ -43,6 +43,16 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/go_tweaks_battery_category">
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_battery_saver_cpu_hook"
+            android:title="@string/go_tweak_battery_saver_cpu_hook_title"
+            android:summary="@string/go_tweak_battery_saver_cpu_hook_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/status_bar_volume_category">
 
         <lineageos.preference.LineageSecureSettingSwitchPreference
