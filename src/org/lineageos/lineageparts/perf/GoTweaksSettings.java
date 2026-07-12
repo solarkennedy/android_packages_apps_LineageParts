@@ -58,6 +58,19 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * matching the (enabled && isPowerSaveMode()) check in
  * GotweaksBatterySaverReceiver.apply() - keep both in sync if it ever
  * changes.
+ *
+ * The Life Mode entries (restrict_data/battery_saver/wifi_off/gps_off/bt_off)
+ * are knobs only - they configure what Life Mode does, they don't turn it on;
+ * the master switch is the QS tile (LifeModeController in XiaomiParts,
+ * PLAN-lifemode.md). They need no apply step at all, unlike the Battery Saver
+ * levers above: the controller reads persist.lifemode.* fresh on every
+ * screen-off, so a flip here simply lands the next time Life Mode engages.
+ *
+ * Note life_mode_battery_saver stacks with the two Extreme Battery Saver levers
+ * above rather than duplicating them: it makes Life Mode switch *stock* Battery
+ * Saver on for the duration of screen-off, which GotweaksBatterySaverReceiver
+ * then hears as it would any other Battery Saver change - so whichever levers
+ * are enabled apply too, with nothing extra wired up.
  */
 public class GoTweaksSettings extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
@@ -70,6 +83,11 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
+    private static final String KEY_LIFE_MODE_RESTRICT_DATA = "life_mode_restrict_data";
+    private static final String KEY_LIFE_MODE_BATTERY_SAVER = "life_mode_battery_saver";
+    private static final String KEY_LIFE_MODE_WIFI_OFF = "life_mode_wifi_off";
+    private static final String KEY_LIFE_MODE_GPS_OFF = "life_mode_gps_off";
+    private static final String KEY_LIFE_MODE_BT_OFF = "life_mode_bt_off";
 
     private static final String PROP_LOW_RAM = "persist.gotweak.low_ram";
     private static final String PROP_HEAP_TRIM = "persist.gotweak.heap_trim";
@@ -83,6 +101,13 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_BATTERY_SAVER_GPU_ENABLE =
             "persist.gotweak.battery_saver_gpu_enable";
     private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
+    private static final String PROP_LIFE_MODE_RESTRICT_DATA =
+            "persist.lifemode.restrict_data";
+    private static final String PROP_LIFE_MODE_BATTERY_SAVER =
+            "persist.lifemode.battery_saver";
+    private static final String PROP_LIFE_MODE_WIFI_OFF = "persist.lifemode.wifi_off";
+    private static final String PROP_LIFE_MODE_GPS_OFF = "persist.lifemode.gps_off";
+    private static final String PROP_LIFE_MODE_BT_OFF = "persist.lifemode.bt_off";
 
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
@@ -91,6 +116,11 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mZramZstdPref;
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
+    private SwitchPreferenceCompat mLifeModeRestrictDataPref;
+    private SwitchPreferenceCompat mLifeModeBatterySaverPref;
+    private SwitchPreferenceCompat mLifeModeWifiOffPref;
+    private SwitchPreferenceCompat mLifeModeGpsOffPref;
+    private SwitchPreferenceCompat mLifeModeBtOffPref;
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -108,6 +138,11 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mZramZstdPref = prefSet.findPreference(KEY_ZRAM_ZSTD);
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
+        mLifeModeRestrictDataPref = prefSet.findPreference(KEY_LIFE_MODE_RESTRICT_DATA);
+        mLifeModeBatterySaverPref = prefSet.findPreference(KEY_LIFE_MODE_BATTERY_SAVER);
+        mLifeModeWifiOffPref = prefSet.findPreference(KEY_LIFE_MODE_WIFI_OFF);
+        mLifeModeGpsOffPref = prefSet.findPreference(KEY_LIFE_MODE_GPS_OFF);
+        mLifeModeBtOffPref = prefSet.findPreference(KEY_LIFE_MODE_BT_OFF);
 
         final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
         if (pepitoLauncher2Pref != null) {
@@ -126,6 +161,16 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_GPU_ENABLE, false));
+        mLifeModeRestrictDataPref.setChecked(
+                SystemProperties.getBoolean(PROP_LIFE_MODE_RESTRICT_DATA, true));
+        mLifeModeBatterySaverPref.setChecked(
+                SystemProperties.getBoolean(PROP_LIFE_MODE_BATTERY_SAVER, true));
+        mLifeModeWifiOffPref.setChecked(
+                SystemProperties.getBoolean(PROP_LIFE_MODE_WIFI_OFF, false));
+        mLifeModeGpsOffPref.setChecked(
+                SystemProperties.getBoolean(PROP_LIFE_MODE_GPS_OFF, false));
+        mLifeModeBtOffPref.setChecked(
+                SystemProperties.getBoolean(PROP_LIFE_MODE_BT_OFF, false));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
@@ -134,6 +179,11 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mZramZstdPref.setOnPreferenceChangeListener(this);
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
+        mLifeModeRestrictDataPref.setOnPreferenceChangeListener(this);
+        mLifeModeBatterySaverPref.setOnPreferenceChangeListener(this);
+        mLifeModeWifiOffPref.setOnPreferenceChangeListener(this);
+        mLifeModeGpsOffPref.setOnPreferenceChangeListener(this);
+        mLifeModeBtOffPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -148,6 +198,34 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         if (preference == mBatterySaverGpuPref) {
             applyBatterySaverLever(PROP_BATTERY_SAVER_GPU_ENABLE, PROP_GPU_CLOCK_CAP, enabled);
+            return true;
+        }
+
+        // Life Mode knobs: no reboot prompt and nothing to apply here.
+        // LifeModeController reads them fresh at each screen-off, so the next
+        // time Life Mode engages it just uses the new value.
+        if (preference == mLifeModeRestrictDataPref) {
+            SystemProperties.set(PROP_LIFE_MODE_RESTRICT_DATA, value);
+            return true;
+        }
+
+        if (preference == mLifeModeBatterySaverPref) {
+            SystemProperties.set(PROP_LIFE_MODE_BATTERY_SAVER, value);
+            return true;
+        }
+
+        if (preference == mLifeModeWifiOffPref) {
+            SystemProperties.set(PROP_LIFE_MODE_WIFI_OFF, value);
+            return true;
+        }
+
+        if (preference == mLifeModeGpsOffPref) {
+            SystemProperties.set(PROP_LIFE_MODE_GPS_OFF, value);
+            return true;
+        }
+
+        if (preference == mLifeModeBtOffPref) {
+            SystemProperties.set(PROP_LIFE_MODE_BT_OFF, value);
             return true;
         }
 
