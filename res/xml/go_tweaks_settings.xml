@@ -31,11 +31,6 @@
             android:summary="@string/go_tweak_dexopt_summary" />
 
         <SwitchPreferenceCompat
-            android:key="go_tweak_gpu_clock_cap"
-            android:title="@string/go_tweak_gpu_clock_cap_title"
-            android:summary="@string/go_tweak_gpu_clock_cap_summary" />
-
-        <SwitchPreferenceCompat
             android:key="go_tweak_zram_zstd"
             android:title="@string/go_tweak_zram_zstd_title"
             android:summary="@string/go_tweak_zram_zstd_summary" />
@@ -46,9 +41,14 @@
         android:title="@string/go_tweaks_battery_category">
 
         <SwitchPreferenceCompat
-            android:key="go_tweak_battery_saver_hook"
-            android:title="@string/go_tweak_battery_saver_hook_title"
-            android:summary="@string/go_tweak_battery_saver_hook_summary" />
+            android:key="go_tweak_battery_saver_cpu"
+            android:title="@string/go_tweak_battery_saver_cpu_title"
+            android:summary="@string/go_tweak_battery_saver_cpu_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_battery_saver_gpu"
+            android:title="@string/go_tweak_battery_saver_gpu_title"
+            android:summary="@string/go_tweak_battery_saver_gpu_summary" />
 
     </PreferenceCategory>
 

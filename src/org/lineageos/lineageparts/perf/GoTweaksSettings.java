@@ -25,21 +25,19 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * pepito-specific tweaks. See PLAN-perf-battery.md. Each toggle writes a
  * persist.gotweak.* property; most are applied by
  * device/xiaomi/mithorium-common's init.gotweaks.rc (ro.config.low_ram /
- * dalvik.vm.* / ro.lmk.* / pm.dexopt.* / kgsl-3d0 max_pwrlevel writes) -
- * zram_zstd is the exception, read directly by init.qcom.post_boot.sh's
- * configure_zram_parameters() instead, since that's the existing code that
- * already owns zram's full setup (disksize/mkswap/swapon) lifecycle.
+ * dalvik.vm.* / ro.lmk.* / pm.dexopt.* writes) - zram_zstd is the exception,
+ * read directly by init.qcom.post_boot.sh's configure_zram_parameters()
+ * instead, since that's the existing code that already owns zram's full
+ * setup (disksize/mkswap/swapon) lifecycle.
  *
- * Five of the six are gated behind a reboot prompt: low_ram/heap_trim/lmk are
- * backed by ro.* or zygote/lmkd-read-once properties that only take effect on
- * the next boot either way; zram_zstd is read once by post_boot.sh while
- * setting up zram as swap, same story; and dexopt needs a reboot to fully
- * revert when turned back off (its "on" trigger applies live, but there is no
- * live "off" trigger - turning it off just lets the next boot's static
- * defaults take over unmodified). Uniform reboot messaging keeps that last
- * asymmetry from being confusing. gpu_clock_cap is the one exception: it's a
- * plain sysfs write with a real trigger in both directions, so it applies
- * immediately and skips the reboot prompt entirely.
+ * Three of the four (low_ram/heap_trim/lmk) are gated behind a reboot
+ * prompt: all backed by ro.* or zygote/lmkd-read-once properties that only
+ * take effect on the next boot either way. zram_zstd is read once by
+ * post_boot.sh while setting up zram as swap, same story. dexopt needs a
+ * reboot to fully revert when turned back off (its "on" trigger applies
+ * live, but there is no live "off" trigger - turning it off just lets the
+ * next boot's static defaults take over unmodified). Uniform reboot
+ * messaging keeps that last asymmetry from being confusing.
  *
  * The PepitoLauncher2 entry is informational only, not a toggle: it's
  * already installed and selectable today (device.mk ships it alongside
@@ -47,14 +45,19 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * default-Home-app assignment is a system Role, not a boolean. Tapping it
  * just opens Settings' Home app picker (ACTION_HOME_SETTINGS).
  *
- * battery_saver_hook is a kill switch (default ON) for
- * GotweaksBatterySaverReceiver (XiaomiParts) - our own "extreme" Battery
- * Saver, which offlines the cpu0-3 performance cluster and caps the GPU
- * clock whenever stock Battery Saver is on. Also live, no reboot - and
- * unlike a plain property write, flipping it here immediately recomputes
- * and sets both cpu_cluster_saver and battery_saver_gpu_cap against the
- * *current* isPowerSaveMode(), so disabling it reverses both effects right
- * away instead of waiting for the next Battery Saver change.
+ * The "Extreme Battery Saver" pair (battery_saver_cpu/battery_saver_gpu) are
+ * a different shape entirely from the rest of this screen: they don't do
+ * anything by themselves. Each just enables one lever
+ * (persist.gotweak.cpu_cluster_saver / gpu_clock_cap) for
+ * GotweaksBatterySaverReceiver (XiaomiParts) to apply automatically
+ * whenever stock Battery Saver is on - our own take on the Pixel-exclusive
+ * Extreme Battery Saver tier, built from root access this device actually
+ * has. Both apply live (no reboot prompt): flipping either one here
+ * immediately recomputes its output property against the *current*
+ * isPowerSaveMode(), rather than waiting for the next Battery Saver change,
+ * matching the (enabled && isPowerSaveMode()) check in
+ * GotweaksBatterySaverReceiver.apply() - keep both in sync if it ever
+ * changes.
  */
 public class GoTweaksSettings extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
@@ -63,31 +66,31 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_HEAP_TRIM = "go_tweak_heap_trim";
     private static final String KEY_LMK = "go_tweak_lmk";
     private static final String KEY_DEXOPT = "go_tweak_dexopt";
-    private static final String KEY_GPU_CLOCK_CAP = "go_tweak_gpu_clock_cap";
     private static final String KEY_ZRAM_ZSTD = "go_tweak_zram_zstd";
-    private static final String KEY_BATTERY_SAVER_HOOK = "go_tweak_battery_saver_hook";
+    private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
+    private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
 
     private static final String PROP_LOW_RAM = "persist.gotweak.low_ram";
     private static final String PROP_HEAP_TRIM = "persist.gotweak.heap_trim";
     private static final String PROP_LMK = "persist.gotweak.lmk";
     private static final String PROP_DEXOPT = "persist.gotweak.dexopt";
-    private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
     private static final String PROP_ZRAM_ZSTD = "persist.gotweak.zram_zstd";
-    private static final String PROP_BATTERY_SAVER_HOOK =
-            "persist.gotweak.battery_saver_hook";
+    private static final String PROP_BATTERY_SAVER_CPU_ENABLE =
+            "persist.gotweak.battery_saver_cpu_enable";
     private static final String PROP_CPU_CLUSTER_SAVER =
             "persist.gotweak.cpu_cluster_saver";
-    private static final String PROP_BATTERY_SAVER_GPU_CAP =
-            "persist.gotweak.battery_saver_gpu_cap";
+    private static final String PROP_BATTERY_SAVER_GPU_ENABLE =
+            "persist.gotweak.battery_saver_gpu_enable";
+    private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
 
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
     private SwitchPreferenceCompat mLmkPref;
     private SwitchPreferenceCompat mDexoptPref;
-    private SwitchPreferenceCompat mGpuClockCapPref;
     private SwitchPreferenceCompat mZramZstdPref;
-    private SwitchPreferenceCompat mBatterySaverHookPref;
+    private SwitchPreferenceCompat mBatterySaverCpuPref;
+    private SwitchPreferenceCompat mBatterySaverGpuPref;
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -102,9 +105,9 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mHeapTrimPref = prefSet.findPreference(KEY_HEAP_TRIM);
         mLmkPref = prefSet.findPreference(KEY_LMK);
         mDexoptPref = prefSet.findPreference(KEY_DEXOPT);
-        mGpuClockCapPref = prefSet.findPreference(KEY_GPU_CLOCK_CAP);
         mZramZstdPref = prefSet.findPreference(KEY_ZRAM_ZSTD);
-        mBatterySaverHookPref = prefSet.findPreference(KEY_BATTERY_SAVER_HOOK);
+        mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
+        mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
 
         final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
         if (pepitoLauncher2Pref != null) {
@@ -118,18 +121,19 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mHeapTrimPref.setChecked(SystemProperties.getBoolean(PROP_HEAP_TRIM, false));
         mLmkPref.setChecked(SystemProperties.getBoolean(PROP_LMK, false));
         mDexoptPref.setChecked(SystemProperties.getBoolean(PROP_DEXOPT, false));
-        mGpuClockCapPref.setChecked(SystemProperties.getBoolean(PROP_GPU_CLOCK_CAP, false));
         mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, false));
-        mBatterySaverHookPref.setChecked(
-                SystemProperties.getBoolean(PROP_BATTERY_SAVER_HOOK, true));
+        mBatterySaverCpuPref.setChecked(
+                SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
+        mBatterySaverGpuPref.setChecked(
+                SystemProperties.getBoolean(PROP_BATTERY_SAVER_GPU_ENABLE, false));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
         mLmkPref.setOnPreferenceChangeListener(this);
         mDexoptPref.setOnPreferenceChangeListener(this);
-        mGpuClockCapPref.setOnPreferenceChangeListener(this);
         mZramZstdPref.setOnPreferenceChangeListener(this);
-        mBatterySaverHookPref.setOnPreferenceChangeListener(this);
+        mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
+        mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -137,24 +141,13 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         final boolean enabled = (Boolean) newValue;
         final String value = enabled ? "1" : "0";
 
-        if (preference == mGpuClockCapPref) {
-            // Plain sysfs write via init.gotweaks.rc, live in both
-            // directions - no reboot prompt needed.
-            SystemProperties.set(PROP_GPU_CLOCK_CAP, value);
+        if (preference == mBatterySaverCpuPref) {
+            applyBatterySaverLever(PROP_BATTERY_SAVER_CPU_ENABLE, PROP_CPU_CLUSTER_SAVER, enabled);
             return true;
         }
 
-        if (preference == mBatterySaverHookPref) {
-            SystemProperties.set(PROP_BATTERY_SAVER_HOOK, value);
-            // Recompute immediately rather than waiting for the next Battery
-            // Saver change - GotweaksBatterySaverReceiver does the same
-            // (enabled && isPowerSaveMode()) check; keep both in sync.
-            final Context context = getContext();
-            final PowerManager pm = context == null
-                    ? null : context.getSystemService(PowerManager.class);
-            final boolean cap = enabled && pm != null && pm.isPowerSaveMode();
-            SystemProperties.set(PROP_CPU_CLUSTER_SAVER, cap ? "1" : "0");
-            SystemProperties.set(PROP_BATTERY_SAVER_GPU_CAP, cap ? "1" : "0");
+        if (preference == mBatterySaverGpuPref) {
+            applyBatterySaverLever(PROP_BATTERY_SAVER_GPU_ENABLE, PROP_GPU_CLOCK_CAP, enabled);
             return true;
         }
 
@@ -174,6 +167,23 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         promptReboot();
         return true;
+    }
+
+    /**
+     * Sets the enable flag, then immediately recomputes the output property
+     * against the current Battery Saver state rather than waiting for the
+     * next change - see GotweaksBatterySaverReceiver.apply(), which this
+     * mirrors per-lever.
+     */
+    private void applyBatterySaverLever(final String enableProp, final String outputProp,
+            final boolean enabled) {
+        SystemProperties.set(enableProp, enabled ? "1" : "0");
+
+        final Context context = getContext();
+        final PowerManager pm = context == null
+                ? null : context.getSystemService(PowerManager.class);
+        final boolean apply = enabled && pm != null && pm.isPowerSaveMode();
+        SystemProperties.set(outputProp, apply ? "1" : "0");
     }
 
     private void promptReboot() {
