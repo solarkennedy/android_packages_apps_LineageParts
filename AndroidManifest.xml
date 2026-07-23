@@ -15,6 +15,9 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <!-- Life Mode greyscale knob applies live (ColorDisplayManager.setSaturationLevel);
+         signature|privileged, carried by the system UID like WRITE_SECURE_SETTINGS above. -->
+    <uses-permission android:name="android.permission.CONTROL_DISPLAY_COLOR_TRANSFORMS" />
     <uses-permission android:name="android.permission.DEVICE_POWER" />
     <uses-permission android:name="android.permission.REBOOT" />
     <uses-permission android:name="android.permission.CHANGE_CONFIGURATION" />

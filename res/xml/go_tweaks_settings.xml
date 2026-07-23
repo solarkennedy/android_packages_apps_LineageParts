@@ -62,6 +62,11 @@
             android:summary="@string/go_tweak_life_mode_info_summary" />
 
         <SwitchPreferenceCompat
+            android:key="life_mode_grayscale"
+            android:title="@string/go_tweak_life_mode_grayscale_title"
+            android:summary="@string/go_tweak_life_mode_grayscale_summary" />
+
+        <SwitchPreferenceCompat
             android:key="life_mode_restrict_data"
             android:title="@string/go_tweak_life_mode_restrict_data_title"
             android:summary="@string/go_tweak_life_mode_restrict_data_summary" />
