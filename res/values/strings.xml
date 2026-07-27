@@ -120,8 +120,10 @@
     <string name="go_tweak_life_mode_bt_off_title">Turn off Bluetooth</string>
     <string name="go_tweak_life_mode_bt_off_summary">Off by default. Turns Bluetooth off while the screen is off, as the original Palm Life Mode did. Note this will cut audio to Bluetooth headphones the moment the screen goes off, and your watch or other accessories will disconnect until you wake the phone — that\'s why it isn\'t on by default. Turned back on with the screen, and left alone if you already had it off.</string>
     <string name="go_tweaks_launcher_category">Launcher</string>
-    <string name="go_tweak_pepitolauncher2_title">PepitoLauncher2 (early preview, v0.2)</string>
+    <string name="go_tweak_pepitolauncher2_title">PepitoLauncher2</string>
     <string name="go_tweak_pepitolauncher2_summary">An in-house reimplementation of the stock Palm PVG100 launcher (package family.cascade.pepitolauncher2). Ships pre-installed alongside Trebuchet but not set as default. There\'s no toggle here on purpose - Android\'s default-Home-app assignment is a system Role, not a simple flag, so this just links to the picker. Tap to open Settings\' Home app chooser and select it there.</string>
+    <string name="go_tweak_pepitolauncher2_releases_title">Get the latest version</string>
+    <string name="go_tweak_pepitolauncher2_releases_summary">Opens the PepitoLauncher2 release page in your browser to download the newest build.</string>
     <string name="go_tweaks_reboot_title">Restart required</string>
     <string name="go_tweaks_reboot_message">This change takes effect after restarting your device.</string>
     <string name="go_tweaks_reboot_now">Restart now</string>
