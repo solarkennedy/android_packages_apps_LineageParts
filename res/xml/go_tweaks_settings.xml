@@ -112,6 +112,15 @@
             android:title="@string/go_tweak_pepitolauncher2_title"
             android:summary="@string/go_tweak_pepitolauncher2_summary" />
 
+        <Preference
+            android:key="go_tweak_pepitolauncher2_releases"
+            android:title="@string/go_tweak_pepitolauncher2_releases_title"
+            android:summary="@string/go_tweak_pepitolauncher2_releases_summary">
+            <intent
+                android:action="android.intent.action.VIEW"
+                android:data="https://github.com/solarkennedy/PepitoLauncher2/releases/latest" />
+        </Preference>
+
     </PreferenceCategory>
 
 </PreferenceScreen>
