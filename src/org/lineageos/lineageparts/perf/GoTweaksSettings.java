@@ -165,7 +165,9 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mHeapTrimPref.setChecked(SystemProperties.getBoolean(PROP_HEAP_TRIM, false));
         mLmkPref.setChecked(SystemProperties.getBoolean(PROP_LMK, false));
         mDexoptPref.setChecked(SystemProperties.getBoolean(PROP_DEXOPT, false));
-        mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, false));
+        // Default ON since 2026-08-02 (must stay in sync with the "unset counts
+        // as on" check in init.qcom.post_boot.sh's configure_zram_parameters()).
+        mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, true));
         mBatterySaverCpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
