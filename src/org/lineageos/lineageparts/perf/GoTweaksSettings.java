@@ -165,9 +165,11 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mHeapTrimPref.setChecked(SystemProperties.getBoolean(PROP_HEAP_TRIM, false));
         mLmkPref.setChecked(SystemProperties.getBoolean(PROP_LMK, false));
         mDexoptPref.setChecked(SystemProperties.getBoolean(PROP_DEXOPT, false));
-        // Default ON since 2026-08-02 (must stay in sync with the "unset counts
-        // as on" check in init.qcom.post_boot.sh's configure_zram_parameters()).
-        mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, true));
+        // Default OFF since 2026-08-22 (must stay in sync with the "unset counts
+        // as off" check in init.qcom.post_boot.sh's configure_zram_parameters()):
+        // Gold A/B showed zstd's slower swap-out drives lmkd to kill backgrounded
+        // apps under pressure that lz4 rides out as plain swap.
+        mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, false));
         mBatterySaverCpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
