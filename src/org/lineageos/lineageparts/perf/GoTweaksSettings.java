@@ -174,7 +174,10 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // Gold A/B showed zstd's slower swap-out drives lmkd to kill backgrounded
         // apps under pressure that lz4 rides out as plain swap.
         mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, false));
-        mGpuPerfFloorPref.setChecked(SystemProperties.getBoolean(PROP_GPU_PERF_FLOOR, false));
+        // Default ON, matching the persist.gotweak.gpu_perf_floor=1 build-prop
+        // default in mithorium.mk (keep in sync). The fallback here only shows
+        // on builds missing that default; the getprop normally resolves.
+        mGpuPerfFloorPref.setChecked(SystemProperties.getBoolean(PROP_GPU_PERF_FLOOR, true));
         mBatterySaverCpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
