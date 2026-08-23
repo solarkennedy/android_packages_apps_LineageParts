@@ -84,6 +84,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_LMK = "go_tweak_lmk";
     private static final String KEY_DEXOPT = "go_tweak_dexopt";
     private static final String KEY_ZRAM_ZSTD = "go_tweak_zram_zstd";
+    private static final String KEY_GPU_PERF_FLOOR = "go_tweak_gpu_perf_floor";
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
@@ -99,6 +100,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_LMK = "persist.gotweak.lmk";
     private static final String PROP_DEXOPT = "persist.gotweak.dexopt";
     private static final String PROP_ZRAM_ZSTD = "persist.gotweak.zram_zstd";
+    private static final String PROP_GPU_PERF_FLOOR = "persist.gotweak.gpu_perf_floor";
     private static final String PROP_BATTERY_SAVER_CPU_ENABLE =
             "persist.gotweak.battery_saver_cpu_enable";
     private static final String PROP_CPU_CLUSTER_SAVER =
@@ -121,6 +123,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mLmkPref;
     private SwitchPreferenceCompat mDexoptPref;
     private SwitchPreferenceCompat mZramZstdPref;
+    private SwitchPreferenceCompat mGpuPerfFloorPref;
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
     private SwitchPreferenceCompat mLifeModeRestrictDataPref;
@@ -144,6 +147,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mLmkPref = prefSet.findPreference(KEY_LMK);
         mDexoptPref = prefSet.findPreference(KEY_DEXOPT);
         mZramZstdPref = prefSet.findPreference(KEY_ZRAM_ZSTD);
+        mGpuPerfFloorPref = prefSet.findPreference(KEY_GPU_PERF_FLOOR);
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
         mLifeModeRestrictDataPref = prefSet.findPreference(KEY_LIFE_MODE_RESTRICT_DATA);
@@ -170,6 +174,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // Gold A/B showed zstd's slower swap-out drives lmkd to kill backgrounded
         // apps under pressure that lz4 rides out as plain swap.
         mZramZstdPref.setChecked(SystemProperties.getBoolean(PROP_ZRAM_ZSTD, false));
+        mGpuPerfFloorPref.setChecked(SystemProperties.getBoolean(PROP_GPU_PERF_FLOOR, false));
         mBatterySaverCpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
@@ -192,6 +197,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mLmkPref.setOnPreferenceChangeListener(this);
         mDexoptPref.setOnPreferenceChangeListener(this);
         mZramZstdPref.setOnPreferenceChangeListener(this);
+        mGpuPerfFloorPref.setOnPreferenceChangeListener(this);
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
         mLifeModeRestrictDataPref.setOnPreferenceChangeListener(this);
@@ -206,6 +212,15 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     public boolean onPreferenceChange(final Preference preference, final Object newValue) {
         final boolean enabled = (Boolean) newValue;
         final String value = enabled ? "1" : "0";
+
+        // GPU perf floor applies live in both directions - init.gotweaks.rc's
+        // `on property:` triggers write kgsl min_pwrlevel immediately, and the
+        // registration-time evaluation applies a persisted "1" on every boot.
+        // No reboot prompt.
+        if (preference == mGpuPerfFloorPref) {
+            SystemProperties.set(PROP_GPU_PERF_FLOOR, value);
+            return true;
+        }
 
         if (preference == mBatterySaverCpuPref) {
             applyBatterySaverLever(PROP_BATTERY_SAVER_CPU_ENABLE, PROP_CPU_CLUSTER_SAVER, enabled);
