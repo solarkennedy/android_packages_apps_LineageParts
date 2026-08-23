@@ -35,6 +35,11 @@
             android:title="@string/go_tweak_zram_zstd_title"
             android:summary="@string/go_tweak_zram_zstd_summary" />
 
+        <SwitchPreferenceCompat
+            android:key="go_tweak_gpu_perf_floor"
+            android:title="@string/go_tweak_gpu_perf_floor_title"
+            android:summary="@string/go_tweak_gpu_perf_floor_summary" />
+
     </PreferenceCategory>
 
     <PreferenceCategory
