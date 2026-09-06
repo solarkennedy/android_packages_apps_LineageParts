@@ -741,4 +741,31 @@
     <string name="sms_security_check_limit_summary">Apps can send %s messages in 1 minute before requiring confirmation</string>
     <string name="sms_security_check_limit_summary_none">Apps are not allowed to send any messages without confirmation</string>
     <string name="sms_security_check_limit_always_confirm">Always confirm</string>
+    <!-- Google Play certification (Pepito Tweaks) -->
+    <string name="play_cert_category">Google Play certification</string>
+
+    <string name="play_cert_about_title">What this is</string>
+    <string name="play_cert_about_summary">Google only certifies devices from manufacturers who ship its software, so a custom build like this one is never certified automatically. Until you tell Google about this device, Google Play shows a \"not Play Protect certified\" warning and some apps refuse to run. Registering is free, takes a minute, and only has to be done once per device - though it comes back if you wipe the device, because the ID below is regenerated.</string>
+
+    <string name="play_cert_status_title">Status</string>
+    <string name="play_cert_status_checking">Checking\u2026</string>
+    <string name="play_cert_status_registered">Registered. Google Play accepts this device and no warning should appear.\n\nNothing to do here - this row just reports what Google Play services currently says. Tap to re-read it.</string>
+    <string name="play_cert_status_grace">Registered. Google Play accepts this device, and its record runs to %1$s.\n\nNothing to do, and no need to come back on that date - the date is Google\'s to renew, not yours. If the warning ever returns, register again with the ID below.\n\nTap to re-read this.</string>
+    <string name="play_cert_status_unregistered">Not registered. Google Play will warn that this device is not Play Protect certified, and some apps may refuse to run. Use the two rows below to fix it.\n\nTap to re-read this.</string>
+    <string name="play_cert_status_other">Google Play services reports certification status %1$s, which this screen does not recognise. If Google Play is not complaining, nothing is wrong.\n\nTap to re-read this.</string>
+    <string name="play_cert_status_unavailable">Could not read the certification status from Google Play services. The device ID below is still usable for registering.\n\nTap to re-read this.</string>
+    <string name="play_cert_status_rechecked">Status re-read from Google Play services</string>
+    <string name="play_cert_status_stale_warning">If you just registered, this will not change until you restart.</string>
+
+    <string name="play_cert_id_title">Device ID</string>
+    <string name="play_cert_id_summary">%1$s\n\nTap to share it - the share sheet includes copying to the clipboard, or send it to yourself if you will register from another device.</string>
+    <string name="play_cert_id_unavailable">Not available yet. Google Play services has to check in once before the ID exists. Connect to the internet and restart the device, then come back.</string>
+    <string name="play_cert_id_share_title">Share device ID</string>
+    <string name="play_cert_id_share_subject">Google Services Framework ID</string>
+
+    <string name="play_cert_register_title">Register this device</string>
+    <string name="play_cert_register_summary">Opens Google\'s registration page. Sign in with the Google account used on this device, paste the ID above into the form, and submit.\n\nThe ID is copied to the clipboard when you tap, and also appears in the browser\'s address bar in case the copy is lost.\n\nAfterwards restart twice: the first restart applies the registration, the second clears the leftover warning notification.</string>
+    <string name="play_cert_id_copied">Device ID copied to clipboard</string>
+    <string name="play_cert_no_browser">No browser available to open the registration page</string>
+    <string name="play_cert_no_share">No app available to share the device ID</string>
 </resources>
