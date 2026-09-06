@@ -6,13 +6,21 @@
 package org.lineageos.lineageparts.perf;
 
 import android.app.AlertDialog;
+import android.content.ActivityNotFoundException;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.hardware.display.ColorDisplayManager;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemProperties;
 import android.provider.Settings;
+import android.text.TextUtils;
+import android.text.format.DateFormat;
+import android.widget.Toast;
 
 import androidx.preference.Preference;
 import androidx.preference.PreferenceScreen;
@@ -94,6 +102,59 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_LIFE_MODE_GPS_OFF = "life_mode_gps_off";
     private static final String KEY_LIFE_MODE_BT_OFF = "life_mode_bt_off";
     private static final String KEY_LIFE_MODE_GRAYSCALE = "life_mode_grayscale";
+    private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
+    private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
+    private static final String KEY_PLAY_CERT_ID = "play_cert_id";
+    private static final String KEY_PLAY_CERT_REGISTER = "play_cert_register";
+
+    /**
+     * GMS's Gservices provider. Reading it needs
+     * com.google.android.providers.gsf.permission.READ_GSERVICES, which GMS declares at
+     * protectionLevel=normal - so it is auto-granted at install and this needs no
+     * privileged status. Absent entirely on vanilla builds, hence the null checks.
+     */
+    private static final Uri GSERVICES_URI =
+            Uri.parse("content://com.google.android.gsf.gservices");
+    private static final String GSERVICES_AUTHORITY = "com.google.android.gsf.gservices";
+    private static final String GSERVICES_ANDROID_ID = "android_id";
+    private static final String GSERVICES_UNCERTIFIED_STATUS = "uncertified_status";
+    private static final String GSERVICES_UNCERTIFIED_EXPIRY =
+            "uncertified_status_expiration_time_ms";
+
+    /**
+     * The registration page does not read an id from the query string - it is a plain
+     * form. We append one anyway so the device ID is visible in the browser's address
+     * bar, which gives the user something to read off if the clipboard copy is lost
+     * (switching apps, a clipboard manager, or pasting on a different device).
+     */
+    private static final String PLAY_CERT_REGISTER_URL =
+            "https://www.google.com/android/uncertified/";
+    private static final String PLAY_CERT_REGISTER_ID_PARAM = "id";
+
+    /**
+     * Fallback source for the device ID, published at boot by
+     * init.pepito-gsfid.sh (device/xiaomi/Mi8937/rootdir).
+     *
+     * ⚠️ Needed because GMS serves uncertified_status through the Gservices
+     * provider but WITHHOLDS android_id from third-party callers - verified
+     * 2026-09-04 on a unit whose gservices.db demonstrably contained the key
+     * while this app, holding both READ_GSERVICES and
+     * READ_PRIVILEGED_PHONE_STATE, got nothing back. The value lives only in
+     * GMS's 0660 app-private storage, so a privileged boot-time read into a
+     * property is the only way to show it without making the user enable adb,
+     * root the device and run a SQL query by hand.
+     */
+    private static final String PROP_GSF_ID = "sys.pepito.gsf_id";
+
+    /**
+     * Observed values of uncertified_status. Only 1 and 3 have ever been seen on the
+     * bench (2026-09-04): a unit showing the "not Play Protect certified" dialog read 3,
+     * and both a long-running unit and a freshly-registered one read 1 alongside an
+     * expiry timestamp 75 days out. The full value set is undocumented, so anything else
+     * is surfaced verbatim rather than guessed at.
+     */
+    private static final String UNCERTIFIED_STATUS_GRACE = "1";
+    private static final String UNCERTIFIED_STATUS_UNREGISTERED = "3";
 
     private static final String PROP_LOW_RAM = "persist.gotweak.low_ram";
     private static final String PROP_HEAP_TRIM = "persist.gotweak.heap_trim";
@@ -132,6 +193,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mLifeModeGpsOffPref;
     private SwitchPreferenceCompat mLifeModeBtOffPref;
     private SwitchPreferenceCompat mLifeModeGrayscalePref;
+    private Preference mPlayCertStatusPref;
+    private Preference mPlayCertIdPref;
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -156,6 +219,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mLifeModeGpsOffPref = prefSet.findPreference(KEY_LIFE_MODE_GPS_OFF);
         mLifeModeBtOffPref = prefSet.findPreference(KEY_LIFE_MODE_BT_OFF);
         mLifeModeGrayscalePref = prefSet.findPreference(KEY_LIFE_MODE_GRAYSCALE);
+
+        setUpPlayCertPrefs(prefSet);
 
         final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
         if (pepitoLauncher2Pref != null) {
@@ -327,6 +392,226 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         final boolean grey = grayscaleEnabled
                 && SystemProperties.getBoolean(PROP_LIFE_MODE_ENABLED, false);
         cdm.setSaturationLevel(grey ? 0 : 100);
+    }
+
+    /**
+     * Wires the "Google Play certification" rows, or removes the whole category on builds
+     * with no GMS (vanilla), where the Gservices provider does not exist.
+     */
+    private void setUpPlayCertPrefs(final PreferenceScreen prefSet) {
+        final Preference category = prefSet.findPreference(KEY_PLAY_CERT_CATEGORY);
+        mPlayCertStatusPref = prefSet.findPreference(KEY_PLAY_CERT_STATUS);
+        mPlayCertIdPref = prefSet.findPreference(KEY_PLAY_CERT_ID);
+        final Preference registerPref = prefSet.findPreference(KEY_PLAY_CERT_REGISTER);
+
+        final Context context = getContext();
+        final boolean haveGservices = context != null
+                && context.getPackageManager()
+                        .resolveContentProvider(GSERVICES_AUTHORITY, 0) != null;
+        if (!haveGservices) {
+            if (category != null) {
+                prefSet.removePreference(category);
+            }
+            mPlayCertStatusPref = null;
+            mPlayCertIdPref = null;
+            return;
+        }
+
+        if (mPlayCertStatusPref != null) {
+            // Re-read on demand. The status only moves after a GMS check-in, so this
+            // will not change immediately after registering - hence the extra toast.
+            mPlayCertStatusPref.setOnPreferenceClickListener(preference -> {
+                refreshPlayCert();
+                toast(R.string.play_cert_status_rechecked);
+                return true;
+            });
+        }
+        if (mPlayCertIdPref != null) {
+            mPlayCertIdPref.setOnPreferenceClickListener(preference -> {
+                shareDeviceId(readDeviceId());
+                return true;
+            });
+        }
+        if (registerPref != null) {
+            registerPref.setOnPreferenceClickListener(preference -> {
+                // Copy as well as putting it in the URL: pasting into the form is the
+                // normal path, and the page itself never displays the ID.
+                final String androidId = readDeviceId();
+                copyDeviceIdToClipboard(androidId);
+                try {
+                    startActivity(new Intent(Intent.ACTION_VIEW,
+                            buildRegistrationUri(androidId)));
+                } catch (ActivityNotFoundException e) {
+                    toast(R.string.play_cert_no_browser);
+                }
+                return true;
+            });
+        }
+
+        refreshPlayCert();
+    }
+
+    /**
+     * Re-reads the device ID and certification status. Called on resume so returning from
+     * the browser reflects reality.
+     *
+     * <p>⚠️ The status only changes after the next GMS check-in, i.e. after a reboot - so
+     * immediately after registering this still reads unregistered. That is expected, and
+     * the summary says so rather than looking like a failure.
+     */
+    private void refreshPlayCert() {
+        final String androidId = readDeviceId();
+
+        if (mPlayCertIdPref != null) {
+            if (TextUtils.isEmpty(androidId)) {
+                mPlayCertIdPref.setSummary(R.string.play_cert_id_unavailable);
+                mPlayCertIdPref.setEnabled(false);
+            } else {
+                mPlayCertIdPref.setSummary(
+                        getString(R.string.play_cert_id_summary, androidId));
+                mPlayCertIdPref.setEnabled(true);
+            }
+        }
+
+        if (mPlayCertStatusPref == null) {
+            return;
+        }
+
+        final String status = readGservices(GSERVICES_UNCERTIFIED_STATUS);
+        if (TextUtils.isEmpty(androidId) && TextUtils.isEmpty(status)) {
+            mPlayCertStatusPref.setSummary(R.string.play_cert_status_unavailable);
+        } else if (TextUtils.isEmpty(status)) {
+            // No row at all: seen on units GMS has never flagged. Nothing is wrong.
+            mPlayCertStatusPref.setSummary(R.string.play_cert_status_registered);
+        } else if (UNCERTIFIED_STATUS_UNREGISTERED.equals(status)) {
+            mPlayCertStatusPref.setSummary(appendStaleHint(
+                    getString(R.string.play_cert_status_unregistered)));
+        } else if (UNCERTIFIED_STATUS_GRACE.equals(status)) {
+            final String expiry = formatExpiry(readGservices(GSERVICES_UNCERTIFIED_EXPIRY));
+            mPlayCertStatusPref.setSummary(TextUtils.isEmpty(expiry)
+                    ? getString(R.string.play_cert_status_registered)
+                    : getString(R.string.play_cert_status_grace, expiry));
+        } else {
+            mPlayCertStatusPref.setSummary(
+                    getString(R.string.play_cert_status_other, status));
+        }
+    }
+
+    /**
+     * Only shown while still unregistered: the most likely reason someone is staring at
+     * this row is that they just registered and expected it to flip.
+     */
+    private String appendStaleHint(final String summary) {
+        return summary + "\n\n" + getString(R.string.play_cert_status_stale_warning);
+    }
+
+    private String formatExpiry(final String millis) {
+        final Context context = getContext();
+        if (context == null || TextUtils.isEmpty(millis)) {
+            return "";
+        }
+        try {
+            return DateFormat.getDateFormat(context)
+                    .format(new java.util.Date(Long.parseLong(millis)));
+        } catch (NumberFormatException e) {
+            return "";
+        }
+    }
+
+    /**
+     * Gservices takes its keys as selectionArgs rather than a WHERE clause, and returns
+     * name/value in columns 0/1. Returns null when the key is absent or unreadable.
+     */
+    /**
+     * The device ID, from the Gservices provider if GMS will part with it and
+     * otherwise from the property our boot service publishes. Empty only when
+     * GMS has never checked in - a reboot fixes that, which the UI says.
+     */
+    private String readDeviceId() {
+        final String fromProvider = readGservices(GSERVICES_ANDROID_ID);
+        if (!TextUtils.isEmpty(fromProvider)) {
+            return fromProvider;
+        }
+        return SystemProperties.get(PROP_GSF_ID, "");
+    }
+
+    private String readGservices(final String key) {
+        final Context context = getContext();
+        if (context == null) {
+            return null;
+        }
+        try (Cursor c = context.getContentResolver().query(
+                GSERVICES_URI, null, null, new String[] { key }, null)) {
+            if (c != null && c.moveToFirst() && c.getColumnCount() >= 2) {
+                return c.getString(1);
+            }
+        } catch (Exception e) {
+            // Provider missing, permission refused, or GMS mid-update - all non-fatal.
+        }
+        return null;
+    }
+
+    /**
+     * Offers the ID through the system share sheet rather than only the clipboard:
+     * registering usually happens on a different machine, so mailing or messaging the
+     * number to yourself is often more useful than a local copy. The share sheet still
+     * offers "copy" among its targets.
+     */
+    private void shareDeviceId(final String androidId) {
+        if (TextUtils.isEmpty(androidId)) {
+            return;
+        }
+        final Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_TEXT, androidId);
+        send.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.play_cert_id_share_subject));
+        try {
+            startActivity(Intent.createChooser(
+                    send, getString(R.string.play_cert_id_share_title)));
+        } catch (ActivityNotFoundException e) {
+            toast(R.string.play_cert_no_share);
+        }
+    }
+
+    /**
+     * Builds the registration URL, appending the device ID as a query parameter when we
+     * have one. Google's form ignores it; it is there so the number is legible in the
+     * address bar as a fallback for a lost clipboard.
+     */
+    private Uri buildRegistrationUri(final String androidId) {
+        final Uri base = Uri.parse(PLAY_CERT_REGISTER_URL);
+        if (TextUtils.isEmpty(androidId)) {
+            return base;
+        }
+        return base.buildUpon()
+                .appendQueryParameter(PLAY_CERT_REGISTER_ID_PARAM, androidId)
+                .build();
+    }
+
+    private void copyDeviceIdToClipboard(final String androidId) {
+        final Context context = getContext();
+        if (context == null || TextUtils.isEmpty(androidId)) {
+            return;
+        }
+        final ClipboardManager cm = context.getSystemService(ClipboardManager.class);
+        if (cm != null) {
+            cm.setPrimaryClip(ClipData.newPlainText(
+                    context.getString(R.string.play_cert_id_title), androidId));
+            toast(R.string.play_cert_id_copied);
+        }
+    }
+
+    private void toast(final int resId) {
+        final Context context = getContext();
+        if (context != null) {
+            Toast.makeText(context, resId, Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        refreshPlayCert();
     }
 
     private void promptReboot() {

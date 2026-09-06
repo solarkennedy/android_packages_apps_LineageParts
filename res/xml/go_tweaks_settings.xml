@@ -128,4 +128,31 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        android:key="play_cert_category"
+        android:title="@string/play_cert_category">
+
+        <Preference
+            android:key="play_cert_about"
+            android:title="@string/play_cert_about_title"
+            android:summary="@string/play_cert_about_summary"
+            android:selectable="false" />
+
+        <Preference
+            android:key="play_cert_status"
+            android:title="@string/play_cert_status_title"
+            android:summary="@string/play_cert_status_checking" />
+
+        <Preference
+            android:key="play_cert_id"
+            android:title="@string/play_cert_id_title"
+            android:summary="@string/play_cert_id_unavailable" />
+
+        <Preference
+            android:key="play_cert_register"
+            android:title="@string/play_cert_register_title"
+            android:summary="@string/play_cert_register_summary" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>
