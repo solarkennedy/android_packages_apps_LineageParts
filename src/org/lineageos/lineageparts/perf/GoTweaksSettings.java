@@ -15,6 +15,8 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.hardware.display.ColorDisplayManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemProperties;
 import android.provider.Settings;
@@ -145,6 +147,24 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
      * root the device and run a SQL query by hand.
      */
     private static final String PROP_GSF_ID = "sys.pepito.gsf_id";
+
+    /**
+     * Re-runs the publisher on demand, so a user who has no ID does not have to reboot.
+     *
+     * ⚠️ Why this is needed at all: the publisher is triggered at boot, but the file it
+     * parses lives in CREDENTIAL-ENCRYPTED storage, which stays locked until the user's
+     * first unlock. On any device with a screen lock the boot-time run therefore finds
+     * nothing and exits silently, and the row shows no ID (community report 2026-09-09;
+     * our bench units all missed it because none of them has a lock screen).
+     *
+     * Tapping the row cannot hit that race: if the user is in Settings they have already
+     * unlocked, so CE storage is available and the re-run succeeds.
+     */
+    private static final String PROP_GSF_REFRESH = "sys.pepito.gsf_refresh";
+
+    /** The publisher is a few file reads; poll briefly rather than making the user wait. */
+    private static final int GSFID_POLL_STEPS = 10;
+    private static final long GSFID_POLL_INTERVAL_MS = 200L;
 
     /**
      * Observed values of uncertified_status. Only 1 and 3 have ever been seen on the
@@ -428,7 +448,12 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         }
         if (mPlayCertIdPref != null) {
             mPlayCertIdPref.setOnPreferenceClickListener(preference -> {
-                shareDeviceId(readDeviceId());
+                final String androidId = readDeviceId();
+                if (TextUtils.isEmpty(androidId)) {
+                    retryPublishDeviceId();
+                } else {
+                    shareDeviceId(androidId);
+                }
                 return true;
             });
         }
@@ -527,6 +552,39 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
      * otherwise from the property our boot service publishes. Empty only when
      * GMS has never checked in - a reboot fixes that, which the UI says.
      */
+    /**
+     * Asks init to re-run the GSF-ID publisher, then polls for the result.
+     *
+     * <p>The service is a oneshot, so starting it again is safe and idempotent. We poll
+     * instead of sleeping a fixed time so a fast device updates immediately, and give up
+     * after ~2s rather than blocking the UI thread indefinitely.
+     */
+    private void retryPublishDeviceId() {
+        // Not ctl.start: an appdomain may never set a control property (neverallow in
+        // system/sepolicy/private/property.te). init watches this property instead, and
+        // the publisher clears it back to 0 so a later tap is a fresh change.
+        SystemProperties.set(PROP_GSF_REFRESH, "1");
+        pollForDeviceId(GSFID_POLL_STEPS);
+    }
+
+    private void pollForDeviceId(final int stepsLeft) {
+        if (mPlayCertIdPref == null) {
+            return;
+        }
+        if (!TextUtils.isEmpty(SystemProperties.get(PROP_GSF_ID, ""))) {
+            refreshPlayCert();
+            return;
+        }
+        if (stepsLeft <= 0) {
+            // Still nothing: the device has genuinely never checked in, so there is no
+            // ID to publish yet. Leave the row's existing explanation in place.
+            toast(R.string.play_cert_id_still_unavailable);
+            return;
+        }
+        new Handler(Looper.getMainLooper()).postDelayed(
+                () -> pollForDeviceId(stepsLeft - 1), GSFID_POLL_INTERVAL_MS);
+    }
+
     private String readDeviceId() {
         final String fromProvider = readGservices(GSERVICES_ANDROID_ID);
         if (!TextUtils.isEmpty(fromProvider)) {

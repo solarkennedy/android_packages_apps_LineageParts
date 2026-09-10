@@ -759,7 +759,8 @@
 
     <string name="play_cert_id_title">Device ID</string>
     <string name="play_cert_id_summary">%1$s\n\nTap to share it - the share sheet includes copying to the clipboard, or send it to yourself if you will register from another device.</string>
-    <string name="play_cert_id_unavailable">Not available yet. Google Play services has to check in once before the ID exists. Connect to the internet and restart the device, then come back.</string>
+    <string name="play_cert_id_unavailable">Not available yet - tap to look again.\n\nThe ID is published at startup, but on a device with a screen lock that happens before storage is unlocked, so it can be missed. Tapping retries it now. If it still does not appear, Google Play services has not checked in yet - connect to the internet and try again.</string>
+    <string name="play_cert_id_still_unavailable">Still no ID - Google Play services has not checked in on this device yet</string>
     <string name="play_cert_id_share_title">Share device ID</string>
     <string name="play_cert_id_share_subject">Google Services Framework ID</string>
 
