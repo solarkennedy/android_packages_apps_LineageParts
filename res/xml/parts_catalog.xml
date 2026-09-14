@@ -35,6 +35,7 @@
 
     <part android:key="go_tweaks"
           android:title="@string/go_tweaks_title"
+          android:icon="@drawable/ic_pepito_tweaks"
           android:summary="@string/go_tweaks_summary"
           android:fragment="org.lineageos.lineageparts.perf.GoTweaksSettings"
           lineage:xmlRes="@xml/go_tweaks_settings" />
