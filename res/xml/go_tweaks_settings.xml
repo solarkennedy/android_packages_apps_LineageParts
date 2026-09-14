@@ -58,47 +58,6 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:title="@string/go_tweaks_life_mode_category">
-
-        <Preference
-            android:key="life_mode_info"
-            android:selectable="false"
-            android:title="@string/go_tweak_life_mode_info_title"
-            android:summary="@string/go_tweak_life_mode_info_summary" />
-
-        <SwitchPreferenceCompat
-            android:key="life_mode_grayscale"
-            android:title="@string/go_tweak_life_mode_grayscale_title"
-            android:summary="@string/go_tweak_life_mode_grayscale_summary" />
-
-        <SwitchPreferenceCompat
-            android:key="life_mode_restrict_data"
-            android:title="@string/go_tweak_life_mode_restrict_data_title"
-            android:summary="@string/go_tweak_life_mode_restrict_data_summary" />
-
-        <SwitchPreferenceCompat
-            android:key="life_mode_battery_saver"
-            android:title="@string/go_tweak_life_mode_battery_saver_title"
-            android:summary="@string/go_tweak_life_mode_battery_saver_summary" />
-
-        <SwitchPreferenceCompat
-            android:key="life_mode_wifi_off"
-            android:title="@string/go_tweak_life_mode_wifi_off_title"
-            android:summary="@string/go_tweak_life_mode_wifi_off_summary" />
-
-        <SwitchPreferenceCompat
-            android:key="life_mode_gps_off"
-            android:title="@string/go_tweak_life_mode_gps_off_title"
-            android:summary="@string/go_tweak_life_mode_gps_off_summary" />
-
-        <SwitchPreferenceCompat
-            android:key="life_mode_bt_off"
-            android:title="@string/go_tweak_life_mode_bt_off_title"
-            android:summary="@string/go_tweak_life_mode_bt_off_summary" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory
         android:title="@string/status_bar_volume_category">
 
         <lineageos.preference.LineageSecureSettingSwitchPreference
