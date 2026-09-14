@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- drawable/ic_pepito_tweaks.xml
+
+     Pepito Tweaks: the PepitoLauncher mark inside a phone.
+
+     The dot cluster is the stock Palm PVG100 launcher's mark, measured off the
+     stock 8.1 Settings' own "Apps" row asset (res/drawable/ic_apps.png, 130x130)
+     rather than eyeballed, so the arrangement is the real one: four large dots
+     in a diamond, four small on the diagonals, two more at the poles. Two
+     deliberate departures for a 24dp monochrome target - the source's horizontal
+     pair sits 3/130 below centre, which is under a pixel here, so it is
+     symmetrised; and the small dots are grown from 0.52x the large radius to
+     0.60x so they still read at icon size. Stock drew it as a green gradient
+     bitmap; monochrome vector here, tinted per the rest of the Lineage set.
+
+     The frame is a compromise, not a measurement. The PVG100's 96.6 x 50.6 mm
+     body is 1.909:1, but a frame that narrow starves the cluster - the fit turns
+     width-limited and the dots shrink by a third. The outer rect is
+     (5,1)-(19,23) = 14 x 22 = 1.571:1 instead, about halfway between true-Palm
+     and the generic 16 x 20 phone outline, and incidentally the same bounds as
+     Material's own smartphone icon. 1-unit stroke, so the cavity is
+     (6,2)-(18,22); the inner corners are r=1 against the outer r=2 to stay
+     concentric, since a square inner corner reads as a lump at this weight.
+
+     The fit is still width-limited (0.35 units of side padding), so the ~2.2
+     units of clearance above and below the poles fall out of it rather than
+     being chosen. Redoing the cluster means redoing that fit - and note each
+     dot's chord is twice its ROUNDED radius: round the two independently and the
+     arc radius exceeds half the chord, which renders the circles as eggs.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24"
+    android:tint="?android:attr/colorControlNormal">
+
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M17,22H7a1,1 0 0,1 -1,-1V3a1,1 0 0,1 1,-1h10a1,1 0 0,1 1,1v18a1,1 0 0,1 -1,1ZM17,1H7a2,2 0 0,0 -2,2V21a2,2 0 0,0 2,2h10a2,2 0 0,0 2,-2V3a2,2 0 0,0 -2,-2Z" />
+
+    <path
+        android:fillColor="@android:color/white"
+        android:pathData="M10.24,9.27a1.76,1.76 0 1,0 3.52,0a1.76,1.76 0 1,0 -3.52,0ZM6.35,12.00a1.76,1.76 0 1,0 3.52,0a1.76,1.76 0 1,0 -3.52,0ZM14.13,12.00a1.76,1.76 0 1,0 3.52,0a1.76,1.76 0 1,0 -3.52,0ZM10.24,14.73a1.76,1.76 0 1,0 3.52,0a1.76,1.76 0 1,0 -3.52,0ZM10.94,5.22a1.06,1.06 0 1,0 2.12,0a1.06,1.06 0 1,0 -2.12,0ZM7.05,8.11a1.06,1.06 0 1,0 2.12,0a1.06,1.06 0 1,0 -2.12,0ZM14.83,8.11a1.06,1.06 0 1,0 2.12,0a1.06,1.06 0 1,0 -2.12,0ZM7.05,15.89a1.06,1.06 0 1,0 2.12,0a1.06,1.06 0 1,0 -2.12,0ZM14.83,15.89a1.06,1.06 0 1,0 2.12,0a1.06,1.06 0 1,0 -2.12,0ZM10.94,18.78a1.06,1.06 0 1,0 2.12,0a1.06,1.06 0 1,0 -2.12,0Z" />
+</vector>
