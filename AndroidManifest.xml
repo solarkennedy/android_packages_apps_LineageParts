@@ -254,6 +254,44 @@
                 android:resource="@string/summary_empty" />
         </activity-alias>
 
+        <!-- Life Mode (System category). A first-class section of its own rather than a
+             row inside Pepito Tweaks, which is also where stock puts it - the PVG100's
+             8.1 Settings has Life Mode at the top level, palm tree and all. No
+             com.android.settings.order, matching the Pepito Tweaks alias below, so the
+             two sit together in the same priority band.
+
+             Also the landing point for the Life Mode QS tile's long-press: SystemUI
+             resolves ACTION_QS_TILE_PREFERENCES against the tile's own package, so
+             XiaomiParts' LifeModeSettingsActivity trampolines into here. Exported so
+             that cross-package start succeeds. -->
+        <activity-alias
+            android:name=".lifemode.LifeModeSettings"
+            android:exported="true"
+            android:label="@string/life_mode_title"
+            android:targetActivity="PartsActivity">
+            <intent-filter>
+                <action android:name="com.android.settings.action.IA_SETTINGS" />
+                <action android:name="org.lineageos.lineageparts.LIFE_MODE_SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.system" />
+            <meta-data
+                android:name="com.android.settings.icon"
+                android:resource="@drawable/ic_life_mode" />
+            <meta-data
+                android:name="com.android.settings.icon_tintable"
+                android:value="true" />
+            <meta-data
+                android:name="com.android.settings.profile"
+                android:value="primary_profile_only" />
+            <meta-data
+                android:name="com.android.settings.summary"
+                android:resource="@string/life_mode_summary" />
+        </activity-alias>
+
         <!-- Pepito Tweaks / low-RAM memory tweaks (System category) -->
         <activity-alias
             android:name=".perf.GoTweaksSettings"

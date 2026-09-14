@@ -13,7 +13,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
-import android.hardware.display.ColorDisplayManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -70,21 +69,15 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * GotweaksBatterySaverReceiver.apply() - keep both in sync if it ever
  * changes.
  *
- * The Life Mode entries (restrict_data/battery_saver/wifi_off/gps_off/bt_off/
- * grayscale) are knobs only - they configure what Life Mode does, they don't
- * turn it on; the master switch is the QS tile (LifeModeController in
- * XiaomiParts, PLAN-lifemode.md). All but greyscale need no apply step, unlike
- * the Battery Saver levers above: the controller reads persist.lifemode.* fresh
- * on every screen-off, so a flip here simply lands the next time Life Mode
- * engages. Greyscale is the exception - it follows the master switch rather than
- * the screen and is instantly visible, so it applies live; see
- * applyLifeModeGrayscale().
+ * Life Mode is no longer here at all: it outgrew being a category on this screen
+ * and is now its own Settings section (LifeModeSettings), reached from System
+ * alongside this one, from search, or from its QS tile's long-press.
  *
- * Note life_mode_battery_saver stacks with the two Extreme Battery Saver levers
- * above rather than duplicating them: it makes Life Mode switch *stock* Battery
- * Saver on for the duration of screen-off, which GotweaksBatterySaverReceiver
- * then hears as it would any other Battery Saver change - so whichever levers
- * are enabled apply too, with nothing extra wired up.
+ * Note Life Mode's own "Turn on Battery Saver" knob stacks with the two Extreme
+ * Battery Saver levers above rather than duplicating them: it makes Life Mode
+ * switch *stock* Battery Saver on for the duration of screen-off, which
+ * GotweaksBatterySaverReceiver then hears as it would any other Battery Saver
+ * change - so whichever levers are enabled apply too, with nothing extra wired up.
  */
 public class GoTweaksSettings extends SettingsPreferenceFragment implements
         Preference.OnPreferenceChangeListener {
@@ -98,12 +91,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
-    private static final String KEY_LIFE_MODE_RESTRICT_DATA = "life_mode_restrict_data";
-    private static final String KEY_LIFE_MODE_BATTERY_SAVER = "life_mode_battery_saver";
-    private static final String KEY_LIFE_MODE_WIFI_OFF = "life_mode_wifi_off";
-    private static final String KEY_LIFE_MODE_GPS_OFF = "life_mode_gps_off";
-    private static final String KEY_LIFE_MODE_BT_OFF = "life_mode_bt_off";
-    private static final String KEY_LIFE_MODE_GRAYSCALE = "life_mode_grayscale";
     private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
     private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
     private static final String KEY_PLAY_CERT_ID = "play_cert_id";
@@ -189,15 +176,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_BATTERY_SAVER_GPU_ENABLE =
             "persist.gotweak.battery_saver_gpu_enable";
     private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
-    private static final String PROP_LIFE_MODE_RESTRICT_DATA =
-            "persist.lifemode.restrict_data";
-    private static final String PROP_LIFE_MODE_BATTERY_SAVER =
-            "persist.lifemode.battery_saver";
-    private static final String PROP_LIFE_MODE_WIFI_OFF = "persist.lifemode.wifi_off";
-    private static final String PROP_LIFE_MODE_GPS_OFF = "persist.lifemode.gps_off";
-    private static final String PROP_LIFE_MODE_BT_OFF = "persist.lifemode.bt_off";
-    private static final String PROP_LIFE_MODE_GRAYSCALE = "persist.lifemode.grayscale";
-    private static final String PROP_LIFE_MODE_ENABLED = "persist.lifemode.enabled";
 
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
@@ -207,12 +185,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mGpuPerfFloorPref;
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
-    private SwitchPreferenceCompat mLifeModeRestrictDataPref;
-    private SwitchPreferenceCompat mLifeModeBatterySaverPref;
-    private SwitchPreferenceCompat mLifeModeWifiOffPref;
-    private SwitchPreferenceCompat mLifeModeGpsOffPref;
-    private SwitchPreferenceCompat mLifeModeBtOffPref;
-    private SwitchPreferenceCompat mLifeModeGrayscalePref;
     private Preference mPlayCertStatusPref;
     private Preference mPlayCertIdPref;
 
@@ -233,12 +205,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mGpuPerfFloorPref = prefSet.findPreference(KEY_GPU_PERF_FLOOR);
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
-        mLifeModeRestrictDataPref = prefSet.findPreference(KEY_LIFE_MODE_RESTRICT_DATA);
-        mLifeModeBatterySaverPref = prefSet.findPreference(KEY_LIFE_MODE_BATTERY_SAVER);
-        mLifeModeWifiOffPref = prefSet.findPreference(KEY_LIFE_MODE_WIFI_OFF);
-        mLifeModeGpsOffPref = prefSet.findPreference(KEY_LIFE_MODE_GPS_OFF);
-        mLifeModeBtOffPref = prefSet.findPreference(KEY_LIFE_MODE_BT_OFF);
-        mLifeModeGrayscalePref = prefSet.findPreference(KEY_LIFE_MODE_GRAYSCALE);
 
         setUpPlayCertPrefs(prefSet);
 
@@ -267,18 +233,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_GPU_ENABLE, false));
-        mLifeModeRestrictDataPref.setChecked(
-                SystemProperties.getBoolean(PROP_LIFE_MODE_RESTRICT_DATA, true));
-        mLifeModeBatterySaverPref.setChecked(
-                SystemProperties.getBoolean(PROP_LIFE_MODE_BATTERY_SAVER, true));
-        mLifeModeWifiOffPref.setChecked(
-                SystemProperties.getBoolean(PROP_LIFE_MODE_WIFI_OFF, false));
-        mLifeModeGpsOffPref.setChecked(
-                SystemProperties.getBoolean(PROP_LIFE_MODE_GPS_OFF, false));
-        mLifeModeBtOffPref.setChecked(
-                SystemProperties.getBoolean(PROP_LIFE_MODE_BT_OFF, false));
-        mLifeModeGrayscalePref.setChecked(
-                SystemProperties.getBoolean(PROP_LIFE_MODE_GRAYSCALE, true));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
@@ -288,12 +242,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mGpuPerfFloorPref.setOnPreferenceChangeListener(this);
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
-        mLifeModeRestrictDataPref.setOnPreferenceChangeListener(this);
-        mLifeModeBatterySaverPref.setOnPreferenceChangeListener(this);
-        mLifeModeWifiOffPref.setOnPreferenceChangeListener(this);
-        mLifeModeGpsOffPref.setOnPreferenceChangeListener(this);
-        mLifeModeBtOffPref.setOnPreferenceChangeListener(this);
-        mLifeModeGrayscalePref.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -317,39 +265,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         if (preference == mBatterySaverGpuPref) {
             applyBatterySaverLever(PROP_BATTERY_SAVER_GPU_ENABLE, PROP_GPU_CLOCK_CAP, enabled);
-            return true;
-        }
-
-        // Life Mode knobs: no reboot prompt and nothing to apply here.
-        // LifeModeController reads them fresh at each screen-off, so the next
-        // time Life Mode engages it just uses the new value.
-        if (preference == mLifeModeRestrictDataPref) {
-            SystemProperties.set(PROP_LIFE_MODE_RESTRICT_DATA, value);
-            return true;
-        }
-
-        if (preference == mLifeModeBatterySaverPref) {
-            SystemProperties.set(PROP_LIFE_MODE_BATTERY_SAVER, value);
-            return true;
-        }
-
-        if (preference == mLifeModeWifiOffPref) {
-            SystemProperties.set(PROP_LIFE_MODE_WIFI_OFF, value);
-            return true;
-        }
-
-        if (preference == mLifeModeGpsOffPref) {
-            SystemProperties.set(PROP_LIFE_MODE_GPS_OFF, value);
-            return true;
-        }
-
-        if (preference == mLifeModeBtOffPref) {
-            SystemProperties.set(PROP_LIFE_MODE_BT_OFF, value);
-            return true;
-        }
-
-        if (preference == mLifeModeGrayscalePref) {
-            applyLifeModeGrayscale(enabled);
             return true;
         }
 
@@ -386,32 +301,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
                 ? null : context.getSystemService(PowerManager.class);
         final boolean apply = enabled && pm != null && pm.isPowerSaveMode();
         SystemProperties.set(outputProp, apply ? "1" : "0");
-    }
-
-    /**
-     * The one Life Mode knob that needs an apply step. Greyscale is instantly
-     * visible and, unlike the other levers, follows the master switch rather than
-     * the screen - so if Life Mode is already on, flipping this has to take effect
-     * right now, not at some future screen-off nobody is watching. Same shape as
-     * applyBatterySaverLever() above: set the flag, then recompute the output
-     * against the current state.
-     *
-     * This duplicates LifeModeController.applyGrayscale() (XiaomiParts) rather than
-     * calling into it - the two are separate apps. Keep them in sync: the condition
-     * is (life mode enabled && greyscale knob on).
-     */
-    private void applyLifeModeGrayscale(final boolean grayscaleEnabled) {
-        SystemProperties.set(PROP_LIFE_MODE_GRAYSCALE, grayscaleEnabled ? "1" : "0");
-
-        final Context context = getContext();
-        final ColorDisplayManager cdm = context == null
-                ? null : context.getSystemService(ColorDisplayManager.class);
-        if (cdm == null) {
-            return;
-        }
-        final boolean grey = grayscaleEnabled
-                && SystemProperties.getBoolean(PROP_LIFE_MODE_ENABLED, false);
-        cdm.setSaturationLevel(grey ? 0 : 100);
     }
 
     /**

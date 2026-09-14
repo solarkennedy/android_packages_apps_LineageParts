@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="life_mode"
+    android:title="@string/life_mode_title">
+
+    <Preference
+        android:key="life_mode_info"
+        android:selectable="false"
+        android:title="@string/life_mode_info_title"
+        android:summary="@string/life_mode_info_summary" />
+
+    <PreferenceCategory
+        android:title="@string/life_mode_levers_category">
+
+        <SwitchPreferenceCompat
+            android:key="life_mode_grayscale"
+            android:title="@string/life_mode_grayscale_title"
+            android:summary="@string/life_mode_grayscale_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="life_mode_restrict_data"
+            android:title="@string/life_mode_restrict_data_title"
+            android:summary="@string/life_mode_restrict_data_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="life_mode_battery_saver"
+            android:title="@string/life_mode_battery_saver_title"
+            android:summary="@string/life_mode_battery_saver_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="life_mode_wifi_off"
+            android:title="@string/life_mode_wifi_off_title"
+            android:summary="@string/life_mode_wifi_off_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="life_mode_gps_off"
+            android:title="@string/life_mode_gps_off_title"
+            android:summary="@string/life_mode_gps_off_summary" />
+
+        <SwitchPreferenceCompat
+            android:key="life_mode_bt_off"
+            android:title="@string/life_mode_bt_off_title"
+            android:summary="@string/life_mode_bt_off_summary" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

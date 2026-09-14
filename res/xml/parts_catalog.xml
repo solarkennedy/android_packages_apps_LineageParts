@@ -39,6 +39,13 @@
           android:fragment="org.lineageos.lineageparts.perf.GoTweaksSettings"
           lineage:xmlRes="@xml/go_tweaks_settings" />
 
+    <part android:key="life_mode"
+          android:title="@string/life_mode_title"
+          android:icon="@drawable/ic_life_mode"
+          android:summary="@string/life_mode_summary"
+          android:fragment="org.lineageos.lineageparts.lifemode.LifeModeSettings"
+          lineage:xmlRes="@xml/life_mode_settings" />
+
     <part android:key="contributors"
           android:title="@string/contributors_cloud_fragment_title"
           android:fragment="org.lineageos.lineageparts.contributors.ContributorsCloudFragment"
