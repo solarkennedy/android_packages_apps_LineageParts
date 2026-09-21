@@ -58,6 +58,17 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/go_tweaks_radio_category">
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_emergency_watchdog"
+            android:title="@string/go_tweak_emergency_watchdog_title"
+            android:summary="@string/go_tweak_emergency_watchdog_summary"
+            android:defaultValue="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/status_bar_volume_category">
 
         <lineageos.preference.LineageSecureSettingSwitchPreference
