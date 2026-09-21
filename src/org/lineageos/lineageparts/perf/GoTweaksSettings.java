@@ -90,6 +90,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_GPU_PERF_FLOOR = "go_tweak_gpu_perf_floor";
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
+    private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
     private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
     private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
@@ -177,6 +178,10 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
             "persist.gotweak.battery_saver_gpu_enable";
     private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
 
+    /** Read fresh by EmergencyWatchdogController (XiaomiParts); applies live. */
+    private static final String PROP_EMERGENCY_WATCHDOG =
+            "persist.gotweak.emergency_watchdog";
+
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
     private SwitchPreferenceCompat mLmkPref;
@@ -185,6 +190,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mGpuPerfFloorPref;
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
+    private SwitchPreferenceCompat mEmergencyWatchdogPref;
     private Preference mPlayCertStatusPref;
     private Preference mPlayCertIdPref;
 
@@ -205,6 +211,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mGpuPerfFloorPref = prefSet.findPreference(KEY_GPU_PERF_FLOOR);
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
+        mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
 
         setUpPlayCertPrefs(prefSet);
 
@@ -233,6 +240,9 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_GPU_ENABLE, false));
+        // Off by default (ships disabled; may default on once validated).
+        mEmergencyWatchdogPref.setChecked(
+                SystemProperties.getBoolean(PROP_EMERGENCY_WATCHDOG, false));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
@@ -242,6 +252,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mGpuPerfFloorPref.setOnPreferenceChangeListener(this);
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
+        mEmergencyWatchdogPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -265,6 +276,13 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         if (preference == mBatterySaverGpuPref) {
             applyBatterySaverLever(PROP_BATTERY_SAVER_GPU_ENABLE, PROP_GPU_CLOCK_CAP, enabled);
+            return true;
+        }
+
+        // Applies live: EmergencyWatchdogController reads the prop fresh at every
+        // decision, so this takes effect without a reboot.
+        if (preference == mEmergencyWatchdogPref) {
+            SystemProperties.set(PROP_EMERGENCY_WATCHDOG, value);
             return true;
         }
 
