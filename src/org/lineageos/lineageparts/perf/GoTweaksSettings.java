@@ -18,6 +18,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemProperties;
+import android.os.UserHandle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -303,8 +304,10 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         if (preference == mBleBeaconPref) {
             SystemProperties.set(PROP_BLE_BEACON, value);
-            getContext().sendBroadcast(new Intent(ACTION_BEACON_REEVALUATE)
-                    .setPackage(XIAOMI_PARTS_PACKAGE));
+            // AsUser: we run as the system uid, and an unqualified sendBroadcast from
+            // there earns a "without a qualified user" warning.
+            getContext().sendBroadcastAsUser(new Intent(ACTION_BEACON_REEVALUATE)
+                    .setPackage(XIAOMI_PARTS_PACKAGE), UserHandle.CURRENT);
             return true;
         }
 
