@@ -106,6 +106,10 @@
     <string name="go_tweak_battery_saver_cpu_summary">On by default. Stock Android has no distinct \"Extreme\" battery saver tier (that\'s a Pixel-exclusive feature) and its regular Battery Saver only works through app restrictions - it can\'t touch hardware directly. This is a root-only lever instead: whenever Battery Saver is on, offlines cpu0-3 (the 1.4GHz cluster), leaving only the ~1.1GHz cpu4-7 running. Doesn\'t do anything by itself - only changes what Battery Saver does. Applies immediately in both directions, no restart needed.</string>
     <string name="go_tweak_battery_saver_gpu_title">Downclock GPU</string>
     <string name="go_tweak_battery_saver_gpu_summary">Off by default. Whenever Battery Saver is on, caps the Adreno 505 to 375MHz (kgsl-3d0/max_pwrlevel 3, down from the uncapped 475MHz ceiling; pwrlevels 0-5 map to 475/450/400/375/300/216MHz). Doesn\'t do anything by itself - only changes what Battery Saver does. Applies immediately in both directions, no restart needed.</string>
+    <!-- Let Google Play services doze (Pepito Tweaks) -->
+    <string name="go_tweaks_gms_category">Google Play services</string>
+    <string name="go_tweak_gms_doze_title">Let Play services sleep</string>
+    <string name="go_tweak_gms_doze_summary">Off by default. Google Play services ships on Android\'s battery-optimization exemption list, so Doze never makes it wait. Turning this on takes it off that list: while the phone is idle it sleeps and syncs in Doze\'s maintenance windows, like other apps. This can save standby battery, but non-urgent notifications, backups and location updates may arrive later. Urgent pushes such as calls and messages still come through. Applies immediately and survives restarts.</string>
     <!-- Emergency-only recovery watchdog (Pepito Tweaks) -->
     <string name="go_tweaks_radio_category">Mobile network</string>
     <string name="go_tweak_emergency_watchdog_title">Auto-recover \"Emergency calls only\"</string>

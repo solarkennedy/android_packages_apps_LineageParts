@@ -57,6 +57,19 @@
 
     </PreferenceCategory>
 
+    <!-- Removed at runtime when Google Play services is absent (vanilla) or not on
+         the system power-save allowlist. -->
+    <PreferenceCategory
+        android:key="go_tweaks_gms_category"
+        android:title="@string/go_tweaks_gms_category">
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_gms_doze"
+            android:title="@string/go_tweak_gms_doze_title"
+            android:summary="@string/go_tweak_gms_doze_summary" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory
         android:title="@string/go_tweaks_radio_category">
 
