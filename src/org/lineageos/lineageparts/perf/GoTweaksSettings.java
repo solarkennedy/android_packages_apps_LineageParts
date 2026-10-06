@@ -15,16 +15,21 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IDeviceIdleController;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.os.SystemProperties;
 import android.os.UserHandle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.preference.Preference;
+import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
 import androidx.preference.SwitchPreferenceCompat;
 
@@ -93,6 +98,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
     private static final String KEY_BLE_BEACON = "go_tweak_ble_beacon";
+    private static final String KEY_GMS_CATEGORY = "go_tweaks_gms_category";
+    private static final String KEY_GMS_DOZE = "go_tweak_gms_doze";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
     private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
     private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
@@ -194,6 +201,9 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
             "org.lineageos.settings.beacon.REEVALUATE";
     private static final String XIAOMI_PARTS_PACKAGE = "org.lineageos.settings";
 
+    private static final String TAG = "GoTweaksSettings";
+    private static final String GMS_PACKAGE = "com.google.android.gms";
+
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
     private SwitchPreferenceCompat mLmkPref;
@@ -204,6 +214,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mBatterySaverGpuPref;
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
     private SwitchPreferenceCompat mBleBeaconPref;
+    private SwitchPreferenceCompat mGmsDozePref;
     private Preference mPlayCertStatusPref;
     private Preference mPlayCertIdPref;
 
@@ -228,6 +239,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mBleBeaconPref = prefSet.findPreference(KEY_BLE_BEACON);
 
         setUpPlayCertPrefs(prefSet);
+        setUpGmsDozePref(prefSet);
 
         final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
         if (pepitoLauncher2Pref != null) {
@@ -302,6 +314,10 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
             return true;
         }
 
+        if (preference == mGmsDozePref) {
+            return setGmsDoze(enabled);
+        }
+
         if (preference == mBleBeaconPref) {
             SystemProperties.set(PROP_BLE_BEACON, value);
             // AsUser: we run as the system uid, and an unqualified sendBroadcast from
@@ -327,6 +343,79 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         promptReboot();
         return true;
+    }
+
+    /**
+     * "Let Play services sleep": takes com.google.android.gms off the SYSTEM power-save
+     * allowlist (the sysconfig <allow-in-power-save> entry GApps ships), so Doze applies
+     * to it like any other app. BiTGApps' "Play Services Doze Mode" is the same idea,
+     * done by editing that sysconfig file instead.
+     *
+     * <p>No property of our own: DeviceIdleController keeps removed system entries in
+     * /data/system/deviceidle.xml ("un-wl") and re-applies them at boot, and both
+     * directions take effect immediately. So the switch reads its state back from the
+     * service and can never disagree with it. Needs DEVICE_POWER, which we hold.
+     */
+    private void setUpGmsDozePref(final PreferenceScreen prefSet) {
+        final PreferenceCategory category = prefSet.findPreference(KEY_GMS_CATEGORY);
+        mGmsDozePref = prefSet.findPreference(KEY_GMS_DOZE);
+        final IDeviceIdleController idle = deviceIdle();
+        boolean available = false;
+        boolean dozing = false;
+        if (idle != null) {
+            try {
+                dozing = contains(idle.getRemovedSystemPowerWhitelistApps(), GMS_PACKAGE);
+                // Offer it only where there is something to toggle: GMS on the system
+                // allowlist now, or already taken off it by us.
+                available = dozing || contains(idle.getSystemPowerWhitelist(), GMS_PACKAGE);
+            } catch (RemoteException e) {
+                Log.w(TAG, "deviceidle unavailable", e);
+            }
+        }
+        if (!available) {
+            if (category != null) {
+                prefSet.removePreference(category);
+            }
+            mGmsDozePref = null;
+            return;
+        }
+        mGmsDozePref.setChecked(dozing);
+        mGmsDozePref.setOnPreferenceChangeListener(this);
+    }
+
+    private boolean setGmsDoze(final boolean enabled) {
+        final IDeviceIdleController idle = deviceIdle();
+        if (idle == null) {
+            return false;
+        }
+        try {
+            if (enabled) {
+                idle.removeSystemPowerWhitelistApp(GMS_PACKAGE);
+            } else {
+                idle.restoreSystemPowerWhitelistApp(GMS_PACKAGE);
+            }
+            return true;
+        } catch (RemoteException | SecurityException e) {
+            Log.w(TAG, "Could not change GMS power-save allowlisting", e);
+            return false;
+        }
+    }
+
+    private static IDeviceIdleController deviceIdle() {
+        return IDeviceIdleController.Stub.asInterface(
+                ServiceManager.getService(Context.DEVICE_IDLE_CONTROLLER));
+    }
+
+    private static boolean contains(final String[] list, final String value) {
+        if (list == null) {
+            return false;
+        }
+        for (String s : list) {
+            if (value.equals(s)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
