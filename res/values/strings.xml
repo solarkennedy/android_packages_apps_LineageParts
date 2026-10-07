@@ -110,10 +110,6 @@
     <string name="go_tweaks_radio_category">Mobile network</string>
     <string name="go_tweak_emergency_watchdog_title">Auto-recover \"Emergency calls only\"</string>
     <string name="go_tweak_emergency_watchdog_summary">When the mobile signal is weak, the phone can get stuck on \"Emergency calls only\" for minutes even with a usable cell in range: the modem has briefly given up on the carrier and won\'t retry on its own until something forces a fresh connection — which is all that toggling airplane mode by hand really does. This watches for that specific stuck state and, once it has lasted longer than a normal retry would, nudges the modem to reconnect. Off by default — this is a new, experimental feature. It waits out ordinary brief drops, never fires during a call or in a true dead zone with no signal at all, and backs off instead of hammering a phone that simply has no coverage. It can\'t create coverage — it only recovers from the stuck state.</string>
-    <!-- BLE-beacon notifications (Pepito Tweaks) -->
-    <string name="go_tweaks_beacon_category">Bluetooth beacons</string>
-    <string name="go_tweak_ble_beacon_title">Beacon notifications</string>
-    <string name="go_tweak_ble_beacon_summary">Off by default. Shows a notification when one of your own Bluetooth LE beacons broadcasts a message (company ID 0xFFFF, \"PV\" format). Matching happens in the Bluetooth chip, so the phone keeps sleeping until a beacon is heard. Needs Bluetooth on.</string>
     <string name="life_mode_title">Life Mode</string>
     <string name="life_mode_summary">Advanced power saving for daily use</string>
     <string name="life_mode_levers_category">While Life Mode is on</string>

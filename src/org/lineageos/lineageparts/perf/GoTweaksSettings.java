@@ -18,7 +18,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemProperties;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -92,7 +91,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
-    private static final String KEY_BLE_BEACON = "go_tweak_ble_beacon";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
     private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
     private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
@@ -184,16 +182,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_EMERGENCY_WATCHDOG =
             "persist.gotweak.emergency_watchdog";
 
-    /**
-     * Read by BeaconNotifyController (XiaomiParts) on this poke, which arms or disarms
-     * the hardware-filtered scan live. The receiver is guarded by WRITE_SECURE_SETTINGS,
-     * which we hold.
-     */
-    private static final String PROP_BLE_BEACON = "persist.gotweak.ble_beacon";
-    private static final String ACTION_BEACON_REEVALUATE =
-            "org.lineageos.settings.beacon.REEVALUATE";
-    private static final String XIAOMI_PARTS_PACKAGE = "org.lineageos.settings";
-
     private SwitchPreferenceCompat mLowRamPref;
     private SwitchPreferenceCompat mHeapTrimPref;
     private SwitchPreferenceCompat mLmkPref;
@@ -203,7 +191,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
-    private SwitchPreferenceCompat mBleBeaconPref;
     private Preference mPlayCertStatusPref;
     private Preference mPlayCertIdPref;
 
@@ -225,7 +212,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
         mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
-        mBleBeaconPref = prefSet.findPreference(KEY_BLE_BEACON);
 
         setUpPlayCertPrefs(prefSet);
 
@@ -257,7 +243,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // Off by default (ships disabled; may default on once validated).
         mEmergencyWatchdogPref.setChecked(
                 SystemProperties.getBoolean(PROP_EMERGENCY_WATCHDOG, false));
-        mBleBeaconPref.setChecked(SystemProperties.getBoolean(PROP_BLE_BEACON, false));
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
@@ -268,7 +253,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
         mEmergencyWatchdogPref.setOnPreferenceChangeListener(this);
-        mBleBeaconPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
@@ -299,15 +283,6 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // decision, so this takes effect without a reboot.
         if (preference == mEmergencyWatchdogPref) {
             SystemProperties.set(PROP_EMERGENCY_WATCHDOG, value);
-            return true;
-        }
-
-        if (preference == mBleBeaconPref) {
-            SystemProperties.set(PROP_BLE_BEACON, value);
-            // AsUser: we run as the system uid, and an unqualified sendBroadcast from
-            // there earns a "without a qualified user" warning.
-            getContext().sendBroadcastAsUser(new Intent(ACTION_BEACON_REEVALUATE)
-                    .setPackage(XIAOMI_PARTS_PACKAGE), UserHandle.CURRENT);
             return true;
         }
 
