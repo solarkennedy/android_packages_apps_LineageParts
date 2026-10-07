@@ -82,17 +82,6 @@
     </PreferenceCategory>
 
     <PreferenceCategory
-        android:title="@string/go_tweaks_beacon_category">
-
-        <SwitchPreferenceCompat
-            android:key="go_tweak_ble_beacon"
-            android:title="@string/go_tweak_ble_beacon_title"
-            android:summary="@string/go_tweak_ble_beacon_summary"
-            android:defaultValue="false" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory
         android:title="@string/status_bar_volume_category">
 
         <lineageos.preference.LineageSecureSettingSwitchPreference
