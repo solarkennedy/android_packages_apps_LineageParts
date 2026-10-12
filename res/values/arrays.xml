@@ -507,4 +507,17 @@
         <item>1</item>
         <item>0</item>
     </string-array>
+
+    <!-- Emergency-only watchdog recovery method (Pepito Tweaks). Values are
+         persist.gotweak.ewd_nudge_mech, read by EmergencyWatchdogController. -->
+    <string-array name="go_tweak_ewd_nudge_mech_entries" translatable="false">
+        <item>@string/go_tweak_ewd_nudge_mech_rescan</item>
+        <item>@string/go_tweak_ewd_nudge_mech_radio</item>
+    </string-array>
+
+    <string-array name="go_tweak_ewd_nudge_mech_values" translatable="false">
+        <item>rescan</item>
+        <item>radio</item>
+    </string-array>
+
 </resources>

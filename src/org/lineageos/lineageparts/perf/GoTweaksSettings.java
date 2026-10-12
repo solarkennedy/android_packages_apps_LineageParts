@@ -27,6 +27,7 @@ import android.text.format.DateFormat;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
@@ -96,6 +97,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
+    private static final String KEY_EWD_NUDGE = "go_tweak_ewd_nudge";
+    private static final String KEY_EWD_NUDGE_MECH = "go_tweak_ewd_nudge_mech";
     private static final String KEY_GMS_CATEGORY = "go_tweaks_gms_category";
     private static final String KEY_GMS_DOZE = "go_tweak_gms_doze";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
@@ -189,6 +192,15 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_EMERGENCY_WATCHDOG =
             "persist.gotweak.emergency_watchdog";
 
+    /**
+     * The watchdog's real-recovery switch and its mechanism. With the first off the
+     * watchdog only detects and notifies (dry run). Both are read fresh at decision
+     * time, so they apply live too. Defaults must match EmergencyWatchdogController.
+     */
+    private static final String PROP_EWD_NUDGE = "persist.gotweak.ewd_nudge";
+    private static final String PROP_EWD_NUDGE_MECH = "persist.gotweak.ewd_nudge_mech";
+    private static final String EWD_NUDGE_MECH_DEFAULT = "rescan";
+
     private static final String TAG = "GoTweaksSettings";
     private static final String GMS_PACKAGE = "com.google.android.gms";
 
@@ -201,6 +213,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
+    private SwitchPreferenceCompat mEwdNudgePref;
+    private ListPreference mEwdNudgeMechPref;
     private SwitchPreferenceCompat mGmsDozePref;
     private Preference mPlayCertStatusPref;
     private Preference mPlayCertIdPref;
@@ -223,6 +237,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
         mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
+        mEwdNudgePref = prefSet.findPreference(KEY_EWD_NUDGE);
+        mEwdNudgeMechPref = prefSet.findPreference(KEY_EWD_NUDGE_MECH);
 
         setUpPlayCertPrefs(prefSet);
         setUpGmsDozePref(prefSet);
@@ -255,6 +271,13 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // Off by default (ships disabled; may default on once validated).
         mEmergencyWatchdogPref.setChecked(
                 SystemProperties.getBoolean(PROP_EMERGENCY_WATCHDOG, false));
+        mEwdNudgePref.setChecked(SystemProperties.getBoolean(PROP_EWD_NUDGE, false));
+        // Anything the controller would not treat as "radio" is a rescan to it.
+        String mech = SystemProperties.get(PROP_EWD_NUDGE_MECH, EWD_NUDGE_MECH_DEFAULT);
+        if (mEwdNudgeMechPref.findIndexOfValue(mech) < 0) {
+            mech = EWD_NUDGE_MECH_DEFAULT;
+        }
+        mEwdNudgeMechPref.setValue(mech);
 
         mLowRamPref.setOnPreferenceChangeListener(this);
         mHeapTrimPref.setOnPreferenceChangeListener(this);
@@ -265,10 +288,18 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
         mEmergencyWatchdogPref.setOnPreferenceChangeListener(this);
+        mEwdNudgePref.setOnPreferenceChangeListener(this);
+        mEwdNudgeMechPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
     public boolean onPreferenceChange(final Preference preference, final Object newValue) {
+        // The one non-switch on this screen; its value is the property value.
+        if (preference == mEwdNudgeMechPref) {
+            SystemProperties.set(PROP_EWD_NUDGE_MECH, (String) newValue);
+            return true;
+        }
+
         final boolean enabled = (Boolean) newValue;
         final String value = enabled ? "1" : "0";
 
@@ -295,6 +326,11 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // decision, so this takes effect without a reboot.
         if (preference == mEmergencyWatchdogPref) {
             SystemProperties.set(PROP_EMERGENCY_WATCHDOG, value);
+            return true;
+        }
+
+        if (preference == mEwdNudgePref) {
+            SystemProperties.set(PROP_EWD_NUDGE, value);
             return true;
         }
 
