@@ -79,6 +79,23 @@
             android:summary="@string/go_tweak_emergency_watchdog_summary"
             android:defaultValue="false" />
 
+        <SwitchPreferenceCompat
+            android:key="go_tweak_ewd_nudge"
+            android:dependency="go_tweak_emergency_watchdog"
+            android:title="@string/go_tweak_ewd_nudge_title"
+            android:summary="@string/go_tweak_ewd_nudge_summary"
+            android:defaultValue="false" />
+
+        <ListPreference
+            android:key="go_tweak_ewd_nudge_mech"
+            android:dependency="go_tweak_ewd_nudge"
+            android:persistent="false"
+            android:title="@string/go_tweak_ewd_nudge_mech_title"
+            android:dialogTitle="@string/go_tweak_ewd_nudge_mech_title"
+            android:summary="%s"
+            android:entries="@array/go_tweak_ewd_nudge_mech_entries"
+            android:entryValues="@array/go_tweak_ewd_nudge_mech_values" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

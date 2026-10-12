@@ -112,8 +112,13 @@
     <string name="go_tweak_gms_doze_summary">Lets Android put Google Play services to sleep when the phone is idle, like other apps. May save standby battery, but non-urgent notifications, backups and location updates can arrive later. Calls and messages still come through. Off by default. Applies immediately.</string>
     <!-- Emergency-only recovery watchdog (Pepito Tweaks) -->
     <string name="go_tweaks_radio_category">Mobile network</string>
-    <string name="go_tweak_emergency_watchdog_title">Auto-recover \"Emergency calls only\"</string>
-    <string name="go_tweak_emergency_watchdog_summary">In weak signal the phone can get stuck on \"Emergency calls only\" even when a usable tower is in range. This watches for that stuck state and makes the modem reconnect, like toggling airplane mode by hand. It ignores brief drops, calls in progress and true dead zones. Experimental. Off by default.</string>
+    <string name="go_tweak_emergency_watchdog_title">Watch for stuck \"Emergency calls only\"</string>
+    <string name="go_tweak_emergency_watchdog_summary">In weak signal the phone can get stuck on \"Emergency calls only\" even when a usable tower is in range. This watches for that stuck state and posts a notification when it lasts more than about a minute and a half. It ignores brief drops, calls in progress and true dead zones. On its own it only reports; it does not change anything. Experimental. Off by default. Applies immediately.</string>
+    <string name="go_tweak_ewd_nudge_title">Try to recover automatically</string>
+    <string name="go_tweak_ewd_nudge_summary">When the phone is found stuck, also makes the modem try again, using the method below. At most once every 15 minutes and six times per restart. In testing this has rarely been faster than waiting. Experimental. Off by default. Applies immediately.</string>
+    <string name="go_tweak_ewd_nudge_mech_title">Recovery method</string>
+    <string name="go_tweak_ewd_nudge_mech_rescan">Search for networks again (gentle; often has no effect)</string>
+    <string name="go_tweak_ewd_nudge_mech_radio">Restart the mobile radio (like toggling airplane mode; drops mobile service for a few seconds)</string>
     <string name="life_mode_title">Life Mode</string>
     <string name="life_mode_summary">Advanced power saving for daily use</string>
     <string name="life_mode_levers_category">While Life Mode is on</string>
