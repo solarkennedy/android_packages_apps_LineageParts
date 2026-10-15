@@ -25,6 +25,12 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_SEARCH_INDEXABLES" />
 
+    <!-- Live voice service state for the Modem tweaks status rows (ServiceState:
+         in service / emergency calls only / no service). signature|privileged,
+         satisfied by the platform cert and allowlisted in
+         org.lineageos.lineageparts.xml alongside the others above. -->
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" />
+
     <!-- Reads the Google Services Framework device ID + Play Protect certification
          status for the "Google Play certification" row in Pepito Tweaks. Declared by
          GMS with protectionLevel=normal, so it is auto-granted at install and needs no

@@ -125,6 +125,19 @@
     <string name="modem_tweak_status_applied_data_centric">Applied: data-centric.</string>
     <string name="modem_tweak_status_applied_voice_centric">Applied: voice-centric (stock).</string>
     <string name="modem_tweak_status_pending">Waiting for a restart to apply the change.</string>
+    <!-- Live modem status rows (Modem tweaks) -->
+    <string name="modem_tweaks_status_category">Status</string>
+    <string name="modem_status_voice_title">Voice service</string>
+    <string name="modem_status_voice_in_service">In service</string>
+    <string name="modem_status_voice_no_service">No service (searching)</string>
+    <string name="modem_status_voice_emergency">Emergency calls only</string>
+    <string name="modem_status_voice_power_off">Radio off</string>
+    <string name="modem_status_feeder_title">Wi-Fi calling feeder</string>
+    <string name="modem_status_feeder_off">Idle — Wi-Fi calling is off</string>
+    <string name="modem_status_feeder_searching">Waiting for Wi-Fi</string>
+    <string name="modem_status_feeder_feeding">Establishing Wi-Fi calling…</string>
+    <string name="modem_status_feeder_up">Ready — Wi-Fi calling established</string>
+    <string name="modem_status_feeder_error">Error talking to the modem</string>
     <!-- Emergency-only recovery watchdog (Modem tweaks) -->
     <string name="modem_tweaks_watchdog_category">Stuck on \"Emergency calls only\"</string>
     <string name="go_tweak_emergency_watchdog_title">Watch for stuck \"Emergency calls only\"</string>
