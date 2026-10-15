@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+     SPDX-FileCopyrightText: The LineageOS Project
+     SPDX-License-Identifier: Apache-2.0
+-->
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:key="modem_tweaks"
+    android:title="@string/modem_tweaks_title">
+
+    <Preference
+        android:key="modem_tweaks_info"
+        android:selectable="false"
+        android:title="@string/modem_tweaks_info_title"
+        android:summary="@string/modem_tweaks_info_summary" />
+
+    <PreferenceCategory
+        android:title="@string/modem_tweaks_registration_category">
+
+        <SwitchPreferenceCompat
+            android:key="modem_tweak_data_centric"
+            android:title="@string/modem_tweak_data_centric_title"
+            android:summary="@string/modem_tweak_data_centric_summary"
+            android:defaultValue="true" />
+
+        <Preference
+            android:key="modem_tweak_data_centric_status"
+            android:title="@string/modem_tweak_status_title"
+            android:summary="@string/modem_tweak_status_unknown" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/modem_tweaks_watchdog_category">
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_emergency_watchdog"
+            android:title="@string/go_tweak_emergency_watchdog_title"
+            android:summary="@string/go_tweak_emergency_watchdog_summary"
+            android:defaultValue="false" />
+
+        <SwitchPreferenceCompat
+            android:key="go_tweak_ewd_nudge"
+            android:dependency="go_tweak_emergency_watchdog"
+            android:title="@string/go_tweak_ewd_nudge_title"
+            android:summary="@string/go_tweak_ewd_nudge_summary"
+            android:defaultValue="false" />
+
+        <ListPreference
+            android:key="go_tweak_ewd_nudge_mech"
+            android:dependency="go_tweak_ewd_nudge"
+            android:persistent="false"
+            android:title="@string/go_tweak_ewd_nudge_mech_title"
+            android:dialogTitle="@string/go_tweak_ewd_nudge_mech_title"
+            android:summary="%s"
+            android:entries="@array/go_tweak_ewd_nudge_mech_entries"
+            android:entryValues="@array/go_tweak_ewd_nudge_mech_values" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>
