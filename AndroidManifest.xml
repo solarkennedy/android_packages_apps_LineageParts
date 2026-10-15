@@ -321,6 +321,38 @@
                 android:resource="@string/go_tweaks_summary" />
         </activity-alias>
 
+        <!-- Modem tweaks (System category): the modem-side settings the port
+             asserts over QMI, plus the emergency-only watchdog, split out of
+             Pepito Tweaks. Same shape as the two aliases above, and likewise no
+             com.android.settings.order, so the three sort together. -->
+        <activity-alias
+            android:name=".radio.ModemTweaksSettings"
+            android:exported="true"
+            android:label="@string/modem_tweaks_title"
+            android:targetActivity="PartsActivity">
+            <intent-filter>
+                <action android:name="com.android.settings.action.IA_SETTINGS" />
+                <action android:name="org.lineageos.lineageparts.MODEM_TWEAKS_SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
+            <meta-data
+                android:name="com.android.settings.category"
+                android:value="com.android.settings.category.ia.system" />
+            <meta-data
+                android:name="com.android.settings.icon"
+                android:resource="@drawable/ic_modem_tweaks" />
+            <meta-data
+                android:name="com.android.settings.icon_tintable"
+                android:value="true" />
+            <meta-data
+                android:name="com.android.settings.profile"
+                android:value="primary_profile_only" />
+            <meta-data
+                android:name="com.android.settings.summary"
+                android:resource="@string/modem_tweaks_summary" />
+        </activity-alias>
+
         <!-- Touchscreen gesture settings (Gestures category) -->
         <activity-alias
             android:name=".gestures.TouchscreenGestureSettings"

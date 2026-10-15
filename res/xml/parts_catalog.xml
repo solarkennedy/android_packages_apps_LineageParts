@@ -40,6 +40,13 @@
           android:fragment="org.lineageos.lineageparts.perf.GoTweaksSettings"
           lineage:xmlRes="@xml/go_tweaks_settings" />
 
+    <part android:key="modem_tweaks"
+          android:title="@string/modem_tweaks_title"
+          android:icon="@drawable/ic_modem_tweaks"
+          android:summary="@string/modem_tweaks_summary"
+          android:fragment="org.lineageos.lineageparts.radio.ModemTweaksSettings"
+          lineage:xmlRes="@xml/modem_tweaks_settings" />
+
     <part android:key="life_mode"
           android:title="@string/life_mode_title"
           android:icon="@drawable/ic_life_mode"

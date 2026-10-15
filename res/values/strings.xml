@@ -110,8 +110,23 @@
     <string name="go_tweaks_gms_category">Google Play services</string>
     <string name="go_tweak_gms_doze_title">Let Play services sleep</string>
     <string name="go_tweak_gms_doze_summary">Lets Android put Google Play services to sleep when the phone is idle, like other apps. May save standby battery, but non-urgent notifications, backups and location updates can arrive later. Calls and messages still come through. Off by default. Applies immediately.</string>
-    <!-- Emergency-only recovery watchdog (Pepito Tweaks) -->
-    <string name="go_tweaks_radio_category">Mobile network</string>
+    <!-- Modem tweaks: its own part; the mobile-network rows moved here from Pepito Tweaks -->
+    <string name="modem_tweaks_title">Modem tweaks</string>
+    <string name="modem_tweaks_summary">Mobile network settings the Pepito port asserts in the modem</string>
+    <string name="modem_tweaks_info_title">About these settings</string>
+    <string name="modem_tweaks_info_summary">The PVG100\'s modem keeps some of its own settings in storage that Android cannot normally reach. The Pepito port checks the ones below every time the phone starts and corrects them if needed, so they survive updates and a fresh flash. A switch marked \"takes effect after a restart\" is read once, at start-up.</string>
+    <string name="modem_tweaks_registration_category">Network registration</string>
+    <string name="modem_tweak_data_centric_title">Prefer data over voice when registering</string>
+    <string name="modem_tweak_data_centric_summary">Tells the modem this phone is \"data-centric\": it stays registered on a tower that offers data even when voice over LTE is momentarily unavailable, instead of dropping to \"Emergency calls only\" and refusing its home network for minutes. Calls and texts still work; they ride VoLTE as before. Turning this off restores the stock \"voice-centric\" setting. On by default. Takes effect after a restart.</string>
+    <string name="modem_tweak_status_title">Current modem setting</string>
+    <string name="modem_tweak_status_unknown">Not checked yet: the start-up check has not finished.</string>
+    <string name="modem_tweak_status_off">Not available on this device.</string>
+    <string name="modem_tweak_status_failed">The start-up check could not reach the modem. Restart to try again.</string>
+    <string name="modem_tweak_status_applied_data_centric">Applied: data-centric.</string>
+    <string name="modem_tweak_status_applied_voice_centric">Applied: voice-centric (stock).</string>
+    <string name="modem_tweak_status_pending">Waiting for a restart to apply the change.</string>
+    <!-- Emergency-only recovery watchdog (Modem tweaks) -->
+    <string name="modem_tweaks_watchdog_category">Stuck on \"Emergency calls only\"</string>
     <string name="go_tweak_emergency_watchdog_title">Watch for stuck \"Emergency calls only\"</string>
     <string name="go_tweak_emergency_watchdog_summary">In weak signal the phone can get stuck on \"Emergency calls only\" even when a usable tower is in range. This watches for that stuck state and posts a notification when it lasts more than about a minute and a half. It ignores brief drops, calls in progress and true dead zones. On its own it only reports; it does not change anything. Experimental. Off by default. Applies immediately.</string>
     <string name="go_tweak_ewd_nudge_title">Try to recover automatically</string>
