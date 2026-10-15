@@ -10,6 +10,8 @@ import android.content.Context;
 import android.os.Bundle;
 import android.os.PowerManager;
 import android.os.SystemProperties;
+import android.telephony.ServiceState;
+import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
 import androidx.preference.ListPreference;
@@ -60,6 +62,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
     private static final String KEY_EWD_NUDGE = "go_tweak_ewd_nudge";
     private static final String KEY_EWD_NUDGE_MECH = "go_tweak_ewd_nudge_mech";
+    private static final String KEY_STATUS_VOICE = "modem_status_voice";
+    private static final String KEY_STATUS_FEEDER = "modem_status_feeder";
 
     /**
      * Read by ims_enabler at boot: 1 -> NAS usage_preference=2 (DATA_CENTRIC),
@@ -93,6 +97,14 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private static final String USAGE_FAILED = "failed";
     private static final String USAGE_OFF = "off";
 
+    /**
+     * The WLAN feeder's live state, published by wfc_wlan_bridge: off | searching
+     * | feeding | up | error. Public (vendor.pepito.modem.*, vendor_public_prop)
+     * so this coredomain app may read it - the feeder's own vendor.qmux.* status
+     * prop is vendor-internal and not readable here.
+     */
+    private static final String PROP_WFC_STATUS = "vendor.pepito.modem.wfc";
+
     /** Read fresh by EmergencyWatchdogController (XiaomiParts); applies live. */
     private static final String PROP_EMERGENCY_WATCHDOG =
             "persist.gotweak.emergency_watchdog";
@@ -111,6 +123,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
     private SwitchPreferenceCompat mEwdNudgePref;
     private ListPreference mEwdNudgeMechPref;
+    private Preference mVoiceStatusPref;
+    private Preference mFeederStatusPref;
 
     @Override
     public void onActivityCreated(final Bundle savedInstanceState) {
@@ -126,6 +140,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
         mEwdNudgePref = prefSet.findPreference(KEY_EWD_NUDGE);
         mEwdNudgeMechPref = prefSet.findPreference(KEY_EWD_NUDGE_MECH);
+        mVoiceStatusPref = prefSet.findPreference(KEY_STATUS_VOICE);
+        mFeederStatusPref = prefSet.findPreference(KEY_STATUS_FEEDER);
 
         mDataCentricPref.setChecked(SystemProperties.getBoolean(PROP_DATA_CENTRIC, true));
         // Off by default (ships disabled; Kyle 2026-10-11: keep it, off).
@@ -145,12 +161,14 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mEwdNudgeMechPref.setOnPreferenceChangeListener(this);
 
         refreshDataCentricStatus();
+        refreshTelephonyStatus();
     }
 
     @Override
     public void onResume() {
         super.onResume();
         refreshDataCentricStatus();
+        refreshTelephonyStatus();
     }
 
     @Override
@@ -212,6 +230,57 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
                     : R.string.modem_tweak_status_applied_voice_centric);
         } else {
             mDataCentricStatusPref.setSummary(R.string.modem_tweak_status_pending);
+        }
+    }
+
+    /**
+     * The live status rows. Voice state is read from ServiceState (needs
+     * READ_PRIVILEGED_PHONE_STATE, allowlisted in org.lineageos.lineageparts.xml);
+     * the feeder row reflects vendor.pepito.modem.wfc, the public mirror
+     * wfc_wlan_bridge publishes. Refreshed on open/resume rather than
+     * continuously - enough to triage "Emergency calls only" without adb.
+     */
+    private void refreshTelephonyStatus() {
+        if (mVoiceStatusPref != null) {
+            int summary = R.string.modem_tweak_status_unknown;
+            final Context context = getContext();
+            final TelephonyManager tm = context != null
+                    ? context.getSystemService(TelephonyManager.class) : null;
+            final ServiceState ss = tm != null ? tm.getServiceState() : null;
+            if (ss != null) {
+                if (ss.isEmergencyOnly()) {
+                    summary = R.string.modem_status_voice_emergency;
+                } else {
+                    switch (ss.getState()) {
+                        case ServiceState.STATE_IN_SERVICE:
+                            summary = R.string.modem_status_voice_in_service;
+                            break;
+                        case ServiceState.STATE_EMERGENCY_ONLY:
+                            summary = R.string.modem_status_voice_emergency;
+                            break;
+                        case ServiceState.STATE_POWER_OFF:
+                            summary = R.string.modem_status_voice_power_off;
+                            break;
+                        default:
+                            summary = R.string.modem_status_voice_no_service;
+                            break;
+                    }
+                }
+            }
+            mVoiceStatusPref.setSummary(summary);
+        }
+
+        if (mFeederStatusPref != null) {
+            final int summary;
+            switch (SystemProperties.get(PROP_WFC_STATUS, "")) {
+                case "up":        summary = R.string.modem_status_feeder_up; break;
+                case "feeding":   summary = R.string.modem_status_feeder_feeding; break;
+                case "searching": summary = R.string.modem_status_feeder_searching; break;
+                case "off":       summary = R.string.modem_status_feeder_off; break;
+                case "error":     summary = R.string.modem_status_feeder_error; break;
+                default:          summary = R.string.modem_tweak_status_unknown; break;
+            }
+            mFeederStatusPref.setSummary(summary);
         }
     }
 

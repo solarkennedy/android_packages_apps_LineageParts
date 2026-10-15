@@ -30,6 +30,23 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/modem_tweaks_status_category">
+
+        <Preference
+            android:key="modem_status_voice"
+            android:selectable="false"
+            android:title="@string/modem_status_voice_title"
+            android:summary="@string/modem_tweak_status_unknown" />
+
+        <Preference
+            android:key="modem_status_feeder"
+            android:selectable="false"
+            android:title="@string/modem_status_feeder_title"
+            android:summary="@string/modem_tweak_status_unknown" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/modem_tweaks_watchdog_category">
 
         <SwitchPreferenceCompat
