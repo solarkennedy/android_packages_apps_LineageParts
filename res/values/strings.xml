@@ -150,7 +150,7 @@
     <string name="go_tweak_ewd_nudge_mech_rescan">Search for networks again (gentle; often has no effect)</string>
     <string name="go_tweak_ewd_nudge_mech_radio">Restart the mobile radio (like toggling airplane mode; drops mobile service for a few seconds)</string>
     <string name="life_mode_title">Life Mode</string>
-    <string name="life_mode_summary">Advanced power saving for daily use</string>
+    <string name="life_mode_summary">Advanced power saving for daily use, from the original Palm OS</string>
     <string name="life_mode_levers_category">While Life Mode is on</string>
     <string name="life_mode_info_title">About Life Mode</string>
     <string name="life_mode_info_summary">A reimplementation of the Palm PVG100\'s headline feature. Turn it on from the Life Mode quick settings tile: while it\'s on, every time the screen goes off your phone is silenced and stops apps chattering over the network, and everything comes back exactly as it was when you turn the screen on again — you won\'t miss a thing. Do Not Disturb is always set to Priority, never total silence, so starred contacts and repeat callers still get through. The switches below choose what else Life Mode does; they don\'t turn it on.</string>
