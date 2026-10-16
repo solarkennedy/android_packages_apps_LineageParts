@@ -261,10 +261,10 @@
         </activity-alias>
 
         <!-- Life Mode (System category). A first-class section of its own rather than a
-             row inside Pepito Tweaks, which is also where stock puts it - the PVG100's
-             8.1 Settings has Life Mode at the top level, palm tree and all. No
-             com.android.settings.order, matching the Pepito Tweaks alias below, so the
-             two sit together in the same priority band.
+             row inside PVG100 System Tweaks, which is also where stock puts it - the
+             PVG100's 8.1 Settings has Life Mode at the top level, palm tree and all. No
+             com.android.settings.order; the two PVG100 tweaks pages below are pinned
+             (-253, -252) so they sit together right after Status bar.
 
              Also the landing point for the Life Mode QS tile's long-press: SystemUI
              resolves ACTION_QS_TILE_PREFERENCES against the tile's own package, so
@@ -298,7 +298,8 @@
                 android:resource="@string/life_mode_summary" />
         </activity-alias>
 
-        <!-- Pepito Tweaks / low-RAM memory tweaks (System category) -->
+        <!-- PVG100 System Tweaks (formerly Pepito Tweaks) / low-RAM memory tweaks
+             (System category) -->
         <activity-alias
             android:name=".perf.GoTweaksSettings"
             android:exported="true"
@@ -314,6 +315,9 @@
                 android:name="com.android.settings.category"
                 android:value="com.android.settings.category.ia.system" />
             <meta-data
+                android:name="com.android.settings.order"
+                android:value="-253" />
+            <meta-data
                 android:name="com.android.settings.icon"
                 android:resource="@drawable/ic_pepito_tweaks" />
             <meta-data
@@ -327,10 +331,10 @@
                 android:resource="@string/go_tweaks_summary" />
         </activity-alias>
 
-        <!-- Modem tweaks (System category): the modem-side settings the port
-             asserts over QMI, plus the emergency-only watchdog, split out of
-             Pepito Tweaks. Same shape as the two aliases above, and likewise no
-             com.android.settings.order, so the three sort together. -->
+        <!-- PVG100 Modem Tweaks (System category): the modem-side settings the
+             port asserts over QMI, plus the emergency-only watchdog, split out of
+             PVG100 System Tweaks. Ordered right after it (-253, -252: after
+             Status bar's -254) so the two PVG100 pages sit together. -->
         <activity-alias
             android:name=".radio.ModemTweaksSettings"
             android:exported="true"
@@ -345,6 +349,9 @@
             <meta-data
                 android:name="com.android.settings.category"
                 android:value="com.android.settings.category.ia.system" />
+            <meta-data
+                android:name="com.android.settings.order"
+                android:value="-252" />
             <meta-data
                 android:name="com.android.settings.icon"
                 android:resource="@drawable/ic_modem_tweaks" />
