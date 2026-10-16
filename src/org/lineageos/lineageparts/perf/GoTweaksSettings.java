@@ -95,6 +95,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_DEXOPT = "go_tweak_dexopt";
     private static final String KEY_ZRAM_ZSTD = "go_tweak_zram_zstd";
     private static final String KEY_GPU_PERF_FLOOR = "go_tweak_gpu_perf_floor";
+    private static final String KEY_MGLRU = "go_tweak_mglru";
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_GMS_CATEGORY = "go_tweaks_gms_category";
@@ -178,6 +179,9 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_DEXOPT = "persist.gotweak.dexopt";
     private static final String PROP_ZRAM_ZSTD = "persist.gotweak.zram_zstd";
     private static final String PROP_GPU_PERF_FLOOR = "persist.gotweak.gpu_perf_floor";
+    private static final String PROP_MGLRU = "persist.gotweak.mglru";
+    // Present only on kernels with CONFIG_LRU_GEN (pepito-24 since 2026-10-16).
+    private static final String MGLRU_SYSFS = "/sys/kernel/mm/lru_gen/enabled";
     private static final String PROP_BATTERY_SAVER_CPU_ENABLE =
             "persist.gotweak.battery_saver_cpu_enable";
     private static final String PROP_CPU_CLUSTER_SAVER =
@@ -195,6 +199,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mDexoptPref;
     private SwitchPreferenceCompat mZramZstdPref;
     private SwitchPreferenceCompat mGpuPerfFloorPref;
+    private SwitchPreferenceCompat mMglruPref;
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
     private SwitchPreferenceCompat mGmsDozePref;
@@ -216,6 +221,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mDexoptPref = prefSet.findPreference(KEY_DEXOPT);
         mZramZstdPref = prefSet.findPreference(KEY_ZRAM_ZSTD);
         mGpuPerfFloorPref = prefSet.findPreference(KEY_GPU_PERF_FLOOR);
+        mMglruPref = prefSet.findPreference(KEY_MGLRU);
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
 
@@ -243,6 +249,17 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // default in mithorium.mk (keep in sync). The fallback here only shows
         // on builds missing that default; the getprop normally resolves.
         mGpuPerfFloorPref.setChecked(SystemProperties.getBoolean(PROP_GPU_PERF_FLOOR, true));
+        // Default ON, matching persist.gotweak.mglru=1 in mithorium.mk (keep in
+        // sync). init.gotweaks.rc writes /sys/kernel/mm/lru_gen/enabled on every
+        // change, live, no reboot. Hide the row on a kernel without the port.
+        if (mMglruPref != null) {
+            if (new java.io.File(MGLRU_SYSFS).exists()) {
+                mMglruPref.setChecked(SystemProperties.getBoolean(PROP_MGLRU, true));
+            } else {
+                mMglruPref.getParent().removePreference(mMglruPref);
+                mMglruPref = null;
+            }
+        }
         mBatterySaverCpuPref.setChecked(
                 SystemProperties.getBoolean(PROP_BATTERY_SAVER_CPU_ENABLE, true));
         mBatterySaverGpuPref.setChecked(
@@ -254,6 +271,9 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mDexoptPref.setOnPreferenceChangeListener(this);
         mZramZstdPref.setOnPreferenceChangeListener(this);
         mGpuPerfFloorPref.setOnPreferenceChangeListener(this);
+        if (mMglruPref != null) {
+            mMglruPref.setOnPreferenceChangeListener(this);
+        }
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
     }
@@ -269,6 +289,13 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         // No reboot prompt.
         if (preference == mGpuPerfFloorPref) {
             SystemProperties.set(PROP_GPU_PERF_FLOOR, value);
+            return true;
+        }
+
+        // Same live scheme: the rc trigger flips the kernel switch, which drains
+        // and rebuilds the LRU lists in place. No reboot prompt.
+        if (preference == mMglruPref) {
+            SystemProperties.set(PROP_MGLRU, value);
             return true;
         }
 
