@@ -86,8 +86,8 @@
     <string name="charging_control_limit_summary">Current limit: %d%%</string>
 
     <!-- Go tweaks (low-RAM tuning) settings -->
-    <string name="go_tweaks_title">Pepito Tweaks</string>
-    <string name="go_tweaks_summary">Low-RAM tuning and other Pepito-specific options</string>
+    <string name="go_tweaks_title">PVG100 System Tweaks</string>
+    <string name="go_tweaks_summary">Low-RAM tuning and other PVG100-specific options</string>
     <string name="go_tweaks_category">Low-RAM tuning</string>
     <string name="go_tweak_low_ram_title">Enable low-RAM mode</string>
     <string name="go_tweak_low_ram_summary">Makes the phone behave like an Android Go device: the system keeps fewer apps in memory and uses smaller caches. Turns off picture-in-picture, and some apps refuse to run, including Android Auto. Off by default. Takes effect after a restart.</string>
@@ -111,7 +111,7 @@
     <string name="go_tweak_gms_doze_title">Let Play services sleep</string>
     <string name="go_tweak_gms_doze_summary">Lets Android put Google Play services to sleep when the phone is idle, like other apps. May save standby battery, but non-urgent notifications, backups and location updates can arrive later. Calls and messages still come through. Off by default. Applies immediately.</string>
     <!-- Modem tweaks: its own part; the mobile-network rows moved here from Pepito Tweaks -->
-    <string name="modem_tweaks_title">Modem tweaks</string>
+    <string name="modem_tweaks_title">PVG100 Modem Tweaks</string>
     <string name="modem_tweaks_summary">Mobile network settings the Pepito port asserts in the modem</string>
     <string name="modem_tweaks_info_title">About these settings</string>
     <string name="modem_tweaks_info_summary">The PVG100\'s modem keeps some of its own settings in storage that Android cannot normally reach. The Pepito port checks the ones below every time the phone starts and corrects them if needed, so they survive updates and a fresh flash. A switch marked \"takes effect after a restart\" is read once, at start-up.</string>
@@ -155,7 +155,7 @@
     <string name="life_mode_restrict_data_title">Restrict background data</string>
     <string name="life_mode_restrict_data_summary">On by default. While the screen is off, turns on Data Saver so apps stop syncing in the background over mobile data. This is the half of Life Mode that actually wins standby battery — silencing alone just stops you hearing the chatter, it doesn\'t stop it. Restored to whatever you had it set to when the screen comes back on.</string>
     <string name="life_mode_battery_saver_title">Turn on Battery Saver</string>
-    <string name="life_mode_battery_saver_summary">On by default. While the screen is off, switches on the stock Battery Saver, which defers background jobs and alarms — the cheapest way to get the full framework standby package. If you\'ve enabled either of the Extreme Battery Saver levers in Pepito Tweaks, they follow along automatically, so Life Mode will also park the fast CPU cluster and/or downclock the GPU while you\'re not looking at the phone. Turned back off with the screen, unless you already had it on.</string>
+    <string name="life_mode_battery_saver_summary">On by default. While the screen is off, switches on the stock Battery Saver, which defers background jobs and alarms — the cheapest way to get the full framework standby package. If you\'ve enabled either of the Extreme Battery Saver levers in PVG100 System Tweaks, they follow along automatically, so Life Mode will also park the fast CPU cluster and/or downclock the GPU while you\'re not looking at the phone. Turned back off with the screen, unless you already had it on.</string>
     <string name="life_mode_wifi_off_title">Turn off Wi-Fi</string>
     <string name="life_mode_wifi_off_summary">Off by default. Also turns Wi-Fi off entirely while the screen is off, for a deeper sleep than restricting background data alone. Calls and texts still reach you — they ride VoLTE over the mobile network, not Wi-Fi — but nothing else will until you wake the phone. Wi-Fi is turned back on with the screen, and is left alone if you already had it off.</string>
     <string name="life_mode_grayscale_title">Grayscale screen</string>
