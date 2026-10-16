@@ -114,9 +114,9 @@
     <string name="go_tweak_gms_doze_summary">Lets Android put Google Play services to sleep when the phone is idle, like other apps. May save standby battery, but non-urgent notifications, backups and location updates can arrive later. Calls and messages still come through. Off by default. Applies immediately.</string>
     <!-- Modem tweaks: its own part; the mobile-network rows moved here from Pepito Tweaks -->
     <string name="modem_tweaks_title">PVG100 Modem Tweaks</string>
-    <string name="modem_tweaks_summary">Mobile network settings the Pepito port asserts in the modem</string>
+    <string name="modem_tweaks_summary">Mobile network settings this ROM keeps set in the modem</string>
     <string name="modem_tweaks_info_title">About these settings</string>
-    <string name="modem_tweaks_info_summary">The PVG100\'s modem keeps some of its own settings in storage that Android cannot normally reach. The Pepito port checks the ones below every time the phone starts and corrects them if needed, so they survive updates and a fresh flash. A switch marked \"takes effect after a restart\" is read once, at start-up.</string>
+    <string name="modem_tweaks_info_summary">The PVG100\'s modem keeps some of its own settings in storage that Android cannot normally reach. This ROM checks the ones below every time the phone starts and corrects them if needed, so they survive updates and a fresh flash. A switch marked \"takes effect after a restart\" is read once, at start-up.</string>
     <string name="modem_tweaks_registration_category">Network registration</string>
     <string name="modem_tweak_data_centric_title">Prefer data over voice when registering</string>
     <string name="modem_tweak_data_centric_summary">Tells the modem this phone is \"data-centric\": it stays registered on a tower that offers data even when voice over LTE is momentarily unavailable, instead of dropping to \"Emergency calls only\" and refusing its home network for minutes. Calls and texts still work; they ride VoLTE as before. Turning this off restores the stock \"voice-centric\" setting. On by default. Takes effect after a restart.</string>
