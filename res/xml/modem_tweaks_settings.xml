@@ -30,6 +30,23 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/modem_tweaks_bands_category">
+
+        <SwitchPreferenceCompat
+            android:key="modem_tweak_b12"
+            android:title="@string/modem_tweak_b12_title"
+            android:summary="@string/modem_tweak_b12_summary"
+            android:defaultValue="false" />
+
+        <Preference
+            android:key="modem_tweak_b12_status"
+            android:selectable="false"
+            android:title="@string/modem_tweak_status_title"
+            android:summary="@string/modem_tweak_status_unknown" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/modem_tweaks_status_category">
 
         <Preference
