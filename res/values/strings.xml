@@ -140,6 +140,18 @@
     <string name="modem_status_feeder_feeding">Establishing Wi-Fi calling…</string>
     <string name="modem_status_feeder_up">Ready — Wi-Fi calling established</string>
     <string name="modem_status_feeder_error">Error talking to the modem</string>
+    <!-- LTE Band 12 switch (Modem tweaks) -->
+    <string name="modem_tweaks_bands_category">Bands</string>
+    <string name="modem_tweak_b12_title">LTE Band 12 (experimental)</string>
+    <string name="modem_tweak_b12_summary">The PVG100\'s radio supports LTE Band 12 (700 MHz), but most phones left the factory with it switched off. This turns it on using calibration copied from a PVG100 that shipped with Band 12. Calibration differs slightly from phone to phone, so Band 12 may not perform as well on yours as your other bands. Band 12 is used by T-Mobile, the networks that run on it, and some regional carriers; Verizon does not use it. Experimental: please report how it works for you. Off by default. Saving to the modem takes about 3 minutes; then restart.</string>
+    <string name="modem_tweak_b12_status_active">On: Band 12 is available.</string>
+    <string name="modem_tweak_b12_status_inactive">Off (stock).</string>
+    <string name="modem_tweak_b12_status_saving">Saving to the modem. Wait about 3 minutes before restarting, or the change is lost.</string>
+    <string name="modem_tweak_b12_status_restart">Saved. Restart to apply.</string>
+    <string name="modem_tweak_b12_status_factory">This phone was calibrated for Band 12 at the factory, and it is already on. Nothing to change.</string>
+    <string name="modem_tweak_b12_status_unsupported">Not available: this phone\'s modem is not set up the way this switch expects. Nothing was changed.</string>
+    <string name="modem_tweak_b12_dialog_title">Saving to the modem</string>
+    <string name="modem_tweak_b12_dialog_message">The modem takes about 3 minutes to save this change. Wait until the status below says "Saved. Restart to apply.", then restart the phone. Restarting sooner loses the change.</string>
     <!-- Emergency-only recovery watchdog (Modem tweaks) -->
     <string name="modem_tweaks_watchdog_category">Stuck on \"Emergency calls only\"</string>
     <string name="go_tweak_emergency_watchdog_title">Watch for stuck \"Emergency calls only\"</string>

@@ -8,6 +8,8 @@ package org.lineageos.lineageparts.radio;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemProperties;
 import android.telephony.ServiceState;
@@ -31,7 +33,7 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * odd ones out there, and the data-centric switch below is the first of a set
  * that this screen is meant to collect.
  *
- * Two kinds of row live here:
+ * Three kinds of row live here:
  *
  * <ul>
  * <li><b>Modem NV settings</b> (data-centric). The switch writes a
@@ -48,6 +50,12 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * vendor.pepito.modem.usage), so "pending restart" and "applied" are visible
  * without adb.</li>
  *
+ * <li><b>LTE Band 12</b>. Also a persist.gotweak.* switch, but applied by its
+ * own vendor oneshot, modem_b12, which init starts on every flip as well as at
+ * boot: it writes the B12 calibration items and NV 6828 bit 11 over diag, then
+ * needs about 3 minutes for the modem to sync EFS before a restart, so this
+ * row tells the user to wait rather than offering an immediate restart.</li>
+ *
  * <li><b>The emergency-only watchdog</b>. Read fresh by
  * EmergencyWatchdogController (XiaomiParts) at every decision, so these apply
  * live with no restart. Moved here unchanged from Pepito Tweaks: same keys,
@@ -59,6 +67,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
     private static final String KEY_DATA_CENTRIC = "modem_tweak_data_centric";
     private static final String KEY_DATA_CENTRIC_STATUS = "modem_tweak_data_centric_status";
+    private static final String KEY_B12 = "modem_tweak_b12";
+    private static final String KEY_B12_STATUS = "modem_tweak_b12_status";
     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
     private static final String KEY_EWD_NUDGE = "go_tweak_ewd_nudge";
     private static final String KEY_EWD_NUDGE_MECH = "go_tweak_ewd_nudge_mech";
@@ -105,6 +115,21 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
      */
     private static final String PROP_WFC_STATUS = "vendor.pepito.modem.wfc";
 
+    /**
+     * LTE Band 12 switch, applied by the vendor oneshot modem_b12
+     * (device/xiaomi/Mi8937/qmux) on every change and at boot. Default off via
+     * persist.gotweak.modem_b12=0 in device/xiaomi/Mi8937/device.mk.
+     */
+    private static final String PROP_B12 = "persist.gotweak.modem_b12";
+
+    /**
+     * modem_b12's state: active | inactive | saving | restart | factory |
+     * unsupported | failed | off. vendor_public_prop like the usage readback.
+     */
+    private static final String PROP_B12_STATUS = "vendor.pepito.modem.b12";
+    private static final String B12_SAVING = "saving";
+    private static final long B12_POLL_MS = 5000;
+
     /** Read fresh by EmergencyWatchdogController (XiaomiParts); applies live. */
     private static final String PROP_EMERGENCY_WATCHDOG =
             "persist.gotweak.emergency_watchdog";
@@ -120,6 +145,10 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
     private SwitchPreferenceCompat mDataCentricPref;
     private Preference mDataCentricStatusPref;
+    private SwitchPreferenceCompat mB12Pref;
+    private Preference mB12StatusPref;
+    private final Handler mHandler = new Handler(Looper.getMainLooper());
+    private final Runnable mB12Poll = this::refreshB12Status;
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
     private SwitchPreferenceCompat mEwdNudgePref;
     private ListPreference mEwdNudgeMechPref;
@@ -137,6 +166,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
         mDataCentricPref = prefSet.findPreference(KEY_DATA_CENTRIC);
         mDataCentricStatusPref = prefSet.findPreference(KEY_DATA_CENTRIC_STATUS);
+        mB12Pref = prefSet.findPreference(KEY_B12);
+        mB12StatusPref = prefSet.findPreference(KEY_B12_STATUS);
         mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
         mEwdNudgePref = prefSet.findPreference(KEY_EWD_NUDGE);
         mEwdNudgeMechPref = prefSet.findPreference(KEY_EWD_NUDGE_MECH);
@@ -144,6 +175,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mFeederStatusPref = prefSet.findPreference(KEY_STATUS_FEEDER);
 
         mDataCentricPref.setChecked(SystemProperties.getBoolean(PROP_DATA_CENTRIC, true));
+        mB12Pref.setChecked(SystemProperties.getBoolean(PROP_B12, false));
         // Off by default (ships disabled; Kyle 2026-10-11: keep it, off).
         mEmergencyWatchdogPref.setChecked(
                 SystemProperties.getBoolean(PROP_EMERGENCY_WATCHDOG, false));
@@ -156,11 +188,13 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mEwdNudgeMechPref.setValue(mech);
 
         mDataCentricPref.setOnPreferenceChangeListener(this);
+        mB12Pref.setOnPreferenceChangeListener(this);
         mEmergencyWatchdogPref.setOnPreferenceChangeListener(this);
         mEwdNudgePref.setOnPreferenceChangeListener(this);
         mEwdNudgeMechPref.setOnPreferenceChangeListener(this);
 
         refreshDataCentricStatus();
+        refreshB12Status();
         refreshTelephonyStatus();
     }
 
@@ -168,7 +202,14 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     public void onResume() {
         super.onResume();
         refreshDataCentricStatus();
+        refreshB12Status();
         refreshTelephonyStatus();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mHandler.removeCallbacks(mB12Poll);
     }
 
     @Override
@@ -190,6 +231,15 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         }
         if (preference == mEwdNudgePref) {
             SystemProperties.set(PROP_EWD_NUDGE, value);
+            return true;
+        }
+
+        if (preference == mB12Pref) {
+            SystemProperties.set(PROP_B12, value);
+            showB12SavingDialog();
+            // modem_b12 starts on the property change; pick up its "saving".
+            mHandler.removeCallbacks(mB12Poll);
+            mHandler.postDelayed(mB12Poll, B12_POLL_MS);
             return true;
         }
 
@@ -231,6 +281,65 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         } else {
             mDataCentricStatusPref.setSummary(R.string.modem_tweak_status_pending);
         }
+    }
+
+    /**
+     * Shows modem_b12's state. While it is saving, polls so the row moves on
+     * to "restart" without the user leaving the screen. A unit calibrated for
+     * B12 at the factory, or one the tool does not recognise, gets the switch
+     * greyed out: modem_b12 will not touch it either way.
+     */
+    private void refreshB12Status() {
+        if (mB12StatusPref == null) {
+            return;
+        }
+        final String have = SystemProperties.get(PROP_B12_STATUS, "");
+        final int summary;
+        boolean switchable = true;
+        switch (have) {
+            case "active":      summary = R.string.modem_tweak_b12_status_active; break;
+            case "inactive":    summary = R.string.modem_tweak_b12_status_inactive; break;
+            case B12_SAVING:    summary = R.string.modem_tweak_b12_status_saving; break;
+            case "restart":     summary = R.string.modem_tweak_b12_status_restart; break;
+            case "factory":
+                summary = R.string.modem_tweak_b12_status_factory;
+                switchable = false;
+                // B12 is on regardless of the switch; show it that way.
+                if (mB12Pref != null) {
+                    mB12Pref.setChecked(true);
+                }
+                break;
+            case "unsupported":
+                summary = R.string.modem_tweak_b12_status_unsupported;
+                switchable = false;
+                break;
+            case "failed":      summary = R.string.modem_tweak_status_failed; break;
+            case "off":
+                summary = R.string.modem_tweak_status_off;
+                switchable = false;
+                break;
+            default:            summary = R.string.modem_tweak_status_unknown; break;
+        }
+        mB12StatusPref.setSummary(summary);
+        if (mB12Pref != null) {
+            mB12Pref.setEnabled(switchable);
+        }
+        mHandler.removeCallbacks(mB12Poll);
+        if (B12_SAVING.equals(have) || TextUtils.isEmpty(have)) {
+            mHandler.postDelayed(mB12Poll, B12_POLL_MS);
+        }
+    }
+
+    private void showB12SavingDialog() {
+        final Context context = getContext();
+        if (context == null) {
+            return;
+        }
+        new AlertDialog.Builder(context)
+                .setTitle(R.string.modem_tweak_b12_dialog_title)
+                .setMessage(R.string.modem_tweak_b12_dialog_message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     /**
