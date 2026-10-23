@@ -108,6 +108,10 @@
     <string name="go_tweak_battery_saver_cpu_summary">While Battery Saver is on, switches off the four faster processor cores and runs on the four slower ones. Saves power, but the phone feels slower. Does nothing when Battery Saver is off. On by default. Applies immediately.</string>
     <string name="go_tweak_battery_saver_gpu_title">Downclock GPU</string>
     <string name="go_tweak_battery_saver_gpu_summary">While Battery Saver is on, limits the graphics chip to a lower top speed. Saves a little power in games and heavy animations, which may run less smoothly. Does nothing when Battery Saver is off. Off by default. Applies immediately.</string>
+    <!-- Screen-off Wi-Fi reconnect (software PNO) -->
+    <string name="go_tweaks_wifi_category">Wi-Fi</string>
+    <string name="go_tweak_wifi_sw_pno_title">Reconnect to Wi-Fi with screen off</string>
+    <string name="go_tweak_wifi_sw_pno_summary">The PVG100 Wi-Fi chip cannot look for saved networks while the screen is off, so after leaving Wi-Fi range the phone stays on mobile data until you turn the screen on. This wakes the phone for a short Wi-Fi scan every few minutes while disconnected, backing off to every 20 minutes and stopping after a few hours. Costs a little battery only while away from Wi-Fi. Off by default. Applies the next time Wi-Fi disconnects.</string>
     <!-- Let Google Play services doze (Pepito Tweaks) -->
     <string name="go_tweaks_gms_category">Google Play services</string>
     <string name="go_tweak_gms_doze_title">Let Play services sleep</string>
