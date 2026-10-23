@@ -520,4 +520,16 @@
         <item>radio</item>
     </string-array>
 
+    <!-- PVG100 System Tweaks: camera flash power (persist.gotweak.flash_ma; 0 = no cap) -->
+    <string-array name="go_tweak_flash_power_entries">
+        <item>Full (1000 mA, stock)</item>
+        <item>Reduced (700 mA)</item>
+        <item>Low (400 mA)</item>
+    </string-array>
+    <string-array name="go_tweak_flash_power_values" translatable="false">
+        <item>0</item>
+        <item>700</item>
+        <item>400</item>
+    </string-array>
+
 </resources>

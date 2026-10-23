@@ -103,6 +103,9 @@
     <string name="go_tweak_gpu_perf_floor_summary">Keeps the graphics chip at a higher minimum speed while it is drawing, so scrolling and animations start smoothly instead of stuttering on the first frames. No cost while the screen is still; slightly more power during video and other light graphics. On by default. Applies immediately.</string>
     <string name="go_tweak_mglru_title">Multi-generation memory manager</string>
     <string name="go_tweak_mglru_summary">Uses the newer kernel memory manager (MGLRU) to decide which background memory to compress first. On the bench it cut background app kills under memory pressure to a third, with app switches a few milliseconds slower. Turn off if the phone feels worse; it applies immediately.</string>
+    <string name="go_tweaks_camera_category">Camera</string>
+    <string name="go_tweak_flash_power_title">Flash power</string>
+    <string name="go_tweak_flash_power_summary">%1$s. Lower this if flash photos come out dim or unlit: a worn battery cannot supply the full strobe, and the PVG100 then cuts it to a trickle. Takes effect on the next photo.</string>
     <string name="go_tweaks_battery_category">Extreme Battery Saver</string>
     <string name="go_tweak_battery_saver_cpu_title">Disable fast CPU cluster</string>
     <string name="go_tweak_battery_saver_cpu_summary">While Battery Saver is on, switches off the four faster processor cores and runs on the four slower ones. Saves power, but the phone feels slower. Does nothing when Battery Saver is off. On by default. Applies immediately.</string>

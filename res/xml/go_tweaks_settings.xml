@@ -48,6 +48,19 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/go_tweaks_camera_category">
+
+        <ListPreference
+            android:key="go_tweak_flash_power"
+            android:title="@string/go_tweak_flash_power_title"
+            android:dialogTitle="@string/go_tweak_flash_power_title"
+            android:entries="@array/go_tweak_flash_power_entries"
+            android:entryValues="@array/go_tweak_flash_power_values"
+            android:defaultValue="0" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/go_tweaks_battery_category">
 
         <SwitchPreferenceCompat

@@ -30,6 +30,7 @@ import android.text.format.DateFormat;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceCategory;
 import androidx.preference.PreferenceScreen;
@@ -105,6 +106,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_GMS_CATEGORY = "go_tweaks_gms_category";
     private static final String KEY_GMS_DOZE = "go_tweak_gms_doze";
+    private static final String KEY_FLASH_POWER = "go_tweak_flash_power";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
     private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
     private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
@@ -203,6 +205,15 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
             "persist.gotweak.battery_saver_gpu_enable";
     private static final String PROP_GPU_CLOCK_CAP = "persist.gotweak.gpu_clock_cap";
 
+    /**
+     * Camera main-strobe cap in mA, "0" = no cap (stock 1000 mA). Applied live by
+     * init.gotweaks.rc to /sys/module/msm_flash/parameters/flash_cap_ma; the next
+     * photo uses it. Why a lever at all: PLAN-misc.md §9 addendum 6 - on a worn
+     * battery the full strobe sags VPH under the PMIC's 3.0 V droop threshold and
+     * the LED is cut to 200 mA, so the flash fires but the photo is dim.
+     */
+    private static final String PROP_FLASH_MA = "persist.gotweak.flash_ma";
+
     private static final String TAG = "GoTweaksSettings";
     private static final String GMS_PACKAGE = "com.google.android.gms";
 
@@ -217,6 +228,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
     private SwitchPreferenceCompat mGmsDozePref;
+    private ListPreference mFlashPowerPref;
     private Preference mPlayCertStatusPref;
     private Preference mPlayCertIdPref;
 
@@ -238,6 +250,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mMglruPref = prefSet.findPreference(KEY_MGLRU);
         mBatterySaverCpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_CPU);
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
+        mFlashPowerPref = prefSet.findPreference(KEY_FLASH_POWER);
 
         setUpPlayCertPrefs(prefSet);
         setUpGmsDozePref(prefSet);
@@ -291,10 +304,26 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         }
         mBatterySaverCpuPref.setOnPreferenceChangeListener(this);
         mBatterySaverGpuPref.setOnPreferenceChangeListener(this);
+
+        // "0" (no cap) when unset; any value not in the list falls back to it.
+        final String flashMa = SystemProperties.get(PROP_FLASH_MA, "0");
+        mFlashPowerPref.setValue(
+                mFlashPowerPref.findIndexOfValue(flashMa) >= 0 ? flashMa : "0");
+        updateFlashPowerSummary();
+        mFlashPowerPref.setOnPreferenceChangeListener(this);
     }
 
     @Override
     public boolean onPreferenceChange(final Preference preference, final Object newValue) {
+        // Applies live: init.gotweaks.rc's `on property:` trigger writes the
+        // msm_flash cap at once; the next photo uses it.
+        if (preference == mFlashPowerPref) {
+            SystemProperties.set(PROP_FLASH_MA, (String) newValue);
+            mFlashPowerPref.setValue((String) newValue);
+            updateFlashPowerSummary();
+            return true;
+        }
+
         final boolean enabled = (Boolean) newValue;
         final String value = enabled ? "1" : "0";
 
@@ -765,5 +794,11 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
                 })
                 .setNegativeButton(R.string.go_tweaks_reboot_later, null)
                 .show();
+    }
+
+    private void updateFlashPowerSummary() {
+        final CharSequence entry = mFlashPowerPref.getEntry();
+        mFlashPowerPref.setSummary(getString(R.string.go_tweak_flash_power_summary,
+                entry != null ? entry : mFlashPowerPref.getEntries()[0]));
     }
 }
