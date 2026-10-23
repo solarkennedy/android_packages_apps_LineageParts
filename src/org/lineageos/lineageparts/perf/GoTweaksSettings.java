@@ -11,6 +11,8 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
@@ -21,6 +23,7 @@ import android.os.PowerManager;
 import android.os.RemoteException;
 import android.os.ServiceManager;
 import android.os.SystemProperties;
+import android.provider.DeviceConfig;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
@@ -96,6 +99,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_ZRAM_ZSTD = "go_tweak_zram_zstd";
     private static final String KEY_GPU_PERF_FLOOR = "go_tweak_gpu_perf_floor";
     private static final String KEY_MGLRU = "go_tweak_mglru";
+    private static final String KEY_WIFI_CATEGORY = "go_tweaks_wifi_category";
+    private static final String KEY_WIFI_SW_PNO = "go_tweak_wifi_sw_pno";
     private static final String KEY_BATTERY_SAVER_CPU = "go_tweak_battery_saver_cpu";
     private static final String KEY_BATTERY_SAVER_GPU = "go_tweak_battery_saver_gpu";
     private static final String KEY_GMS_CATEGORY = "go_tweaks_gms_category";
@@ -182,6 +187,14 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_MGLRU = "persist.gotweak.mglru";
     // Present only on kernels with CONFIG_LRU_GEN (pepito-24 since 2026-10-16).
     private static final String MGLRU_SYSFS = "/sys/kernel/mm/lru_gen/enabled";
+    // Software PNO needs both the wifi overlay bool (WifiOverlay_Mi8937) and this
+    // DeviceConfig flag; the switch owns the flag and BootReceiver re-asserts it,
+    // since a server-side DeviceConfig sync could otherwise change it.
+    private static final String PROP_WIFI_SW_PNO = "persist.gotweak.wifi_sw_pno";
+    private static final String WIFI_RES_PACKAGE = "com.android.wifi.resources";
+    private static final String WIFI_SW_PNO_RES = "config_wifiSwPnoEnabled";
+    private static final String DEVICE_CONFIG_WIFI_NAMESPACE = "wifi";
+    private static final String DEVICE_CONFIG_SW_PNO = "software_pno_enabled";
     private static final String PROP_BATTERY_SAVER_CPU_ENABLE =
             "persist.gotweak.battery_saver_cpu_enable";
     private static final String PROP_CPU_CLUSTER_SAVER =
@@ -200,6 +213,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mZramZstdPref;
     private SwitchPreferenceCompat mGpuPerfFloorPref;
     private SwitchPreferenceCompat mMglruPref;
+    private SwitchPreferenceCompat mWifiSwPnoPref;
     private SwitchPreferenceCompat mBatterySaverCpuPref;
     private SwitchPreferenceCompat mBatterySaverGpuPref;
     private SwitchPreferenceCompat mGmsDozePref;
@@ -227,6 +241,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         setUpPlayCertPrefs(prefSet);
         setUpGmsDozePref(prefSet);
+        setUpWifiSwPnoPref(prefSet);
 
         final Preference pepitoLauncher2Pref = prefSet.findPreference(KEY_PEPITOLAUNCHER2_INFO);
         if (pepitoLauncher2Pref != null) {
@@ -299,6 +314,14 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
             return true;
         }
 
+        // WifiScanningService reads the DeviceConfig flag live; it takes effect on
+        // the next PNO start (Wi-Fi disconnected with the screen off). No reboot.
+        if (preference == mWifiSwPnoPref) {
+            SystemProperties.set(PROP_WIFI_SW_PNO, value);
+            applyWifiSwPno(enabled);
+            return true;
+        }
+
         if (preference == mBatterySaverCpuPref) {
             applyBatterySaverLever(PROP_BATTERY_SAVER_CPU_ENABLE, PROP_CPU_CLUSTER_SAVER, enabled);
             return true;
@@ -329,6 +352,52 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
 
         promptReboot();
         return true;
+    }
+
+    private void setUpWifiSwPnoPref(PreferenceScreen prefSet) {
+        final PreferenceCategory category = prefSet.findPreference(KEY_WIFI_CATEGORY);
+        mWifiSwPnoPref = prefSet.findPreference(KEY_WIFI_SW_PNO);
+        if (category == null || mWifiSwPnoPref == null) {
+            return;
+        }
+        if (!isWifiSwPnoAllowed(requireContext())) {
+            prefSet.removePreference(category);
+            mWifiSwPnoPref = null;
+            return;
+        }
+        mWifiSwPnoPref.setChecked(SystemProperties.getBoolean(PROP_WIFI_SW_PNO, false));
+        mWifiSwPnoPref.setOnPreferenceChangeListener(this);
+    }
+
+    /** True when the (overlaid) wifi resources allow software PNO at all. */
+    private static boolean isWifiSwPnoAllowed(Context context) {
+        try {
+            final Resources res = context.getPackageManager()
+                    .getResourcesForApplication(WIFI_RES_PACKAGE);
+            final int id = res.getIdentifier(WIFI_SW_PNO_RES, "bool", WIFI_RES_PACKAGE);
+            return id != 0 && res.getBoolean(id);
+        } catch (PackageManager.NameNotFoundException | Resources.NotFoundException e) {
+            Log.w(TAG, "Cannot read " + WIFI_SW_PNO_RES, e);
+            return false;
+        }
+    }
+
+    private static void applyWifiSwPno(boolean enabled) {
+        try {
+            DeviceConfig.setProperty(DEVICE_CONFIG_WIFI_NAMESPACE, DEVICE_CONFIG_SW_PNO,
+                    Boolean.toString(enabled), /* makeDefault */ false);
+        } catch (SecurityException e) {
+            Log.e(TAG, "Cannot set wifi/" + DEVICE_CONFIG_SW_PNO, e);
+        }
+    }
+
+    /** Called from BootReceiver: re-apply the user's choice once it has been made. */
+    public static void restoreWifiSwPno(Context context) {
+        final String value = SystemProperties.get(PROP_WIFI_SW_PNO, "");
+        if (TextUtils.isEmpty(value) || !isWifiSwPnoAllowed(context)) {
+            return;
+        }
+        applyWifiSwPno("1".equals(value));
     }
 
     /**
