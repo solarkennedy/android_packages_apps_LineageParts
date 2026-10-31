@@ -47,6 +47,23 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/modem_tweaks_voice_category">
+
+        <SwitchPreferenceCompat
+            android:key="modem_tweak_evs_swb"
+            android:title="@string/modem_tweak_evs_swb_title"
+            android:summary="@string/modem_tweak_evs_swb_summary"
+            android:defaultValue="false" />
+
+        <Preference
+            android:key="modem_tweak_evs_swb_status"
+            android:selectable="false"
+            android:title="@string/modem_tweak_status_title"
+            android:summary="@string/modem_tweak_status_unknown" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/modem_tweaks_status_category">
 
         <Preference

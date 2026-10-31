@@ -56,6 +56,13 @@ import org.lineageos.lineageparts.SettingsPreferenceFragment;
  * needs about 3 minutes for the modem to sync EFS before a restart, so this
  * row tells the user to wait rather than offering an immediate restart.</li>
  *
+ * <li><b>Super-wideband call audio</b>. Same pattern as Band 12: a
+ * persist.gotweak.* switch applied by the vendor oneshot modem_evs, which caps
+ * the EVS bandwidth in the modem EFS at wideband unless the switch allows
+ * super-wideband (an EVS-SWB call that starts with a voice calibration
+ * registered crashes the ADSP and drops the call). Off by default; saving
+ * takes about 3 minutes, then a restart.</li>
+ *
  * <li><b>The emergency-only watchdog</b>. Read fresh by
  * EmergencyWatchdogController (XiaomiParts) at every decision, so these apply
  * live with no restart. Moved here unchanged from Pepito Tweaks: same keys,
@@ -69,6 +76,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_DATA_CENTRIC_STATUS = "modem_tweak_data_centric_status";
     private static final String KEY_B12 = "modem_tweak_b12";
     private static final String KEY_B12_STATUS = "modem_tweak_b12_status";
+    private static final String KEY_EVS = "modem_tweak_evs_swb";
+    private static final String KEY_EVS_STATUS = "modem_tweak_evs_swb_status";
     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
     private static final String KEY_EWD_NUDGE = "go_tweak_ewd_nudge";
     private static final String KEY_EWD_NUDGE_MECH = "go_tweak_ewd_nudge_mech";
@@ -130,6 +139,20 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private static final String B12_SAVING = "saving";
     private static final long B12_POLL_MS = 5000;
 
+    /**
+     * EVS super-wideband switch, applied by the vendor oneshot modem_evs
+     * (device/xiaomi/Mi8937/qmux) on every change, at boot and when a SIM
+     * loads. Default off (EVS capped at wideband) via
+     * persist.gotweak.modem_evs_swb=0 in device/xiaomi/Mi8937/device.mk.
+     */
+    private static final String PROP_EVS = "persist.gotweak.modem_evs_swb";
+
+    /**
+     * modem_evs's state: capped | swb | none | saving | restart | unsupported
+     * | failed | off. vendor_public_prop like the B12 status.
+     */
+    private static final String PROP_EVS_STATUS = "vendor.pepito.modem.evs";
+
     /** Read fresh by EmergencyWatchdogController (XiaomiParts); applies live. */
     private static final String PROP_EMERGENCY_WATCHDOG =
             "persist.gotweak.emergency_watchdog";
@@ -149,6 +172,9 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private Preference mB12StatusPref;
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Runnable mB12Poll = this::refreshB12Status;
+    private SwitchPreferenceCompat mEvsPref;
+    private Preference mEvsStatusPref;
+    private final Runnable mEvsPoll = this::refreshEvsStatus;
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
     private SwitchPreferenceCompat mEwdNudgePref;
     private ListPreference mEwdNudgeMechPref;
@@ -168,6 +194,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mDataCentricStatusPref = prefSet.findPreference(KEY_DATA_CENTRIC_STATUS);
         mB12Pref = prefSet.findPreference(KEY_B12);
         mB12StatusPref = prefSet.findPreference(KEY_B12_STATUS);
+        mEvsPref = prefSet.findPreference(KEY_EVS);
+        mEvsStatusPref = prefSet.findPreference(KEY_EVS_STATUS);
         mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
         mEwdNudgePref = prefSet.findPreference(KEY_EWD_NUDGE);
         mEwdNudgeMechPref = prefSet.findPreference(KEY_EWD_NUDGE_MECH);
@@ -176,6 +204,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
         mDataCentricPref.setChecked(SystemProperties.getBoolean(PROP_DATA_CENTRIC, true));
         mB12Pref.setChecked(SystemProperties.getBoolean(PROP_B12, false));
+        mEvsPref.setChecked(SystemProperties.getBoolean(PROP_EVS, false));
         // Off by default (ships disabled; Kyle 2026-10-11: keep it, off).
         mEmergencyWatchdogPref.setChecked(
                 SystemProperties.getBoolean(PROP_EMERGENCY_WATCHDOG, false));
@@ -189,12 +218,14 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
         mDataCentricPref.setOnPreferenceChangeListener(this);
         mB12Pref.setOnPreferenceChangeListener(this);
+        mEvsPref.setOnPreferenceChangeListener(this);
         mEmergencyWatchdogPref.setOnPreferenceChangeListener(this);
         mEwdNudgePref.setOnPreferenceChangeListener(this);
         mEwdNudgeMechPref.setOnPreferenceChangeListener(this);
 
         refreshDataCentricStatus();
         refreshB12Status();
+        refreshEvsStatus();
         refreshTelephonyStatus();
     }
 
@@ -203,6 +234,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         super.onResume();
         refreshDataCentricStatus();
         refreshB12Status();
+        refreshEvsStatus();
         refreshTelephonyStatus();
     }
 
@@ -210,6 +242,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     public void onPause() {
         super.onPause();
         mHandler.removeCallbacks(mB12Poll);
+        mHandler.removeCallbacks(mEvsPoll);
     }
 
     @Override
@@ -236,10 +269,19 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
         if (preference == mB12Pref) {
             SystemProperties.set(PROP_B12, value);
-            showB12SavingDialog();
+            showModemSavingDialog();
             // modem_b12 starts on the property change; pick up its "saving".
             mHandler.removeCallbacks(mB12Poll);
             mHandler.postDelayed(mB12Poll, B12_POLL_MS);
+            return true;
+        }
+
+        if (preference == mEvsPref) {
+            SystemProperties.set(PROP_EVS, value);
+            showModemSavingDialog();
+            // modem_evs starts on the property change; pick up its "saving".
+            mHandler.removeCallbacks(mEvsPoll);
+            mHandler.postDelayed(mEvsPoll, B12_POLL_MS);
             return true;
         }
 
@@ -330,7 +372,50 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         }
     }
 
-    private void showB12SavingDialog() {
+    /**
+     * Shows modem_evs's state, the same way as the B12 row. A carrier profile
+     * that never asks for super-wideband ("none") greys the switch out:
+     * modem_evs leaves such a profile alone either way.
+     */
+    private void refreshEvsStatus() {
+        if (mEvsStatusPref == null) {
+            return;
+        }
+        final String have = SystemProperties.get(PROP_EVS_STATUS, "");
+        final int summary;
+        boolean switchable = true;
+        switch (have) {
+            case "capped":      summary = R.string.modem_tweak_evs_status_capped; break;
+            case "swb":         summary = R.string.modem_tweak_evs_status_swb; break;
+            case B12_SAVING:    summary = R.string.modem_tweak_b12_status_saving; break;
+            case "restart":     summary = R.string.modem_tweak_b12_status_restart; break;
+            case "none":
+                summary = R.string.modem_tweak_evs_status_none;
+                switchable = false;
+                break;
+            case "unsupported":
+                summary = R.string.modem_tweak_evs_status_unsupported;
+                switchable = false;
+                break;
+            case "failed":      summary = R.string.modem_tweak_status_failed; break;
+            case "off":
+                summary = R.string.modem_tweak_status_off;
+                switchable = false;
+                break;
+            default:            summary = R.string.modem_tweak_status_unknown; break;
+        }
+        mEvsStatusPref.setSummary(summary);
+        if (mEvsPref != null) {
+            mEvsPref.setEnabled(switchable);
+        }
+        mHandler.removeCallbacks(mEvsPoll);
+        if (B12_SAVING.equals(have) || TextUtils.isEmpty(have)) {
+            mHandler.postDelayed(mEvsPoll, B12_POLL_MS);
+        }
+    }
+
+    /** The modem-save wait dialog, shared by the B12 and EVS switches. */
+    private void showModemSavingDialog() {
         final Context context = getContext();
         if (context == null) {
             return;

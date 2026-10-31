@@ -157,6 +157,13 @@
     <string name="modem_tweak_b12_status_restart">Saved. Restart to apply.</string>
     <string name="modem_tweak_b12_status_factory">This phone was calibrated for Band 12 at the factory, and it is already on. Nothing to change.</string>
     <string name="modem_tweak_b12_status_unsupported">Not available: this phone\'s modem is not set up the way this switch expects. Nothing was changed.</string>
+    <string name="modem_tweaks_voice_category">Voice calls</string>
+    <string name="modem_tweak_evs_swb_title">Super-wideband call audio</string>
+    <string name="modem_tweak_evs_swb_summary">Lets calls use EVS super-wideband audio when the network offers it (T-Mobile does). On the PVG100 a super-wideband call can crash the phone\'s audio processor and drop the call, for example when you switch to speaker as the call connects, so this is off by default and calls use wideband HD voice instead. Saving to the modem takes about 3 minutes then a restart.</string>
+    <string name="modem_tweak_evs_status_capped">Off: calls use wideband HD voice.</string>
+    <string name="modem_tweak_evs_status_swb">On: super-wideband calls are allowed.</string>
+    <string name="modem_tweak_evs_status_none">Your carrier does not use super-wideband audio. Nothing to change.</string>
+    <string name="modem_tweak_evs_status_unsupported">Not available: this phone\'s modem is not set up the way this switch expects. Nothing was changed.</string>
     <string name="modem_tweak_b12_dialog_title">Saving to the modem</string>
     <string name="modem_tweak_b12_dialog_message">The modem takes about 3 minutes to save this change. Wait until the status below says \"Saved. Restart to apply.\", then restart the phone. Restarting sooner loses the change.</string>
     <!-- Emergency-only recovery watchdog (Modem tweaks) -->
