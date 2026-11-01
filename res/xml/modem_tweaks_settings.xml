@@ -64,6 +64,17 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/modem_tweaks_location_category">
+
+        <SwitchPreferenceCompat
+            android:key="modem_tweak_gnss_xtra"
+            android:title="@string/modem_tweak_gnss_xtra_title"
+            android:summary="@string/modem_tweak_gnss_xtra_summary"
+            android:defaultValue="true" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/modem_tweaks_status_category">
 
         <Preference

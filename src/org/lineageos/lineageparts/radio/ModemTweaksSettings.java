@@ -78,6 +78,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_B12_STATUS = "modem_tweak_b12_status";
     private static final String KEY_EVS = "modem_tweak_evs_swb";
     private static final String KEY_EVS_STATUS = "modem_tweak_evs_swb_status";
+    private static final String KEY_GNSS_XTRA = "modem_tweak_gnss_xtra";
     private static final String KEY_EMERGENCY_WATCHDOG = "go_tweak_emergency_watchdog";
     private static final String KEY_EWD_NUDGE = "go_tweak_ewd_nudge";
     private static final String KEY_EWD_NUDGE_MECH = "go_tweak_ewd_nudge_mech";
@@ -153,6 +154,16 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
      */
     private static final String PROP_EVS_STATUS = "vendor.pepito.modem.evs";
 
+    /**
+     * XTRA predicted-orbits injection by the GNSS HAL (mithorium-common
+     * gps/android/2.1/GnssXtra.cpp). The HAL offers IGnssXtra to the framework
+     * only if this is on when the framework starts, so turning it on needs a
+     * restart; turned off, the HAL stops injecting at once. Unset, the HAL
+     * treats it as on wherever ro.vendor.qmux.enable=1 (pepito), hence the
+     * true default here.
+     */
+    private static final String PROP_GNSS_XTRA = "persist.gotweak.gnss_xtra";
+
     /** Read fresh by EmergencyWatchdogController (XiaomiParts); applies live. */
     private static final String PROP_EMERGENCY_WATCHDOG =
             "persist.gotweak.emergency_watchdog";
@@ -173,6 +184,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private final Handler mHandler = new Handler(Looper.getMainLooper());
     private final Runnable mB12Poll = this::refreshB12Status;
     private SwitchPreferenceCompat mEvsPref;
+    private SwitchPreferenceCompat mGnssXtraPref;
     private Preference mEvsStatusPref;
     private final Runnable mEvsPoll = this::refreshEvsStatus;
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
@@ -196,6 +208,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mB12StatusPref = prefSet.findPreference(KEY_B12_STATUS);
         mEvsPref = prefSet.findPreference(KEY_EVS);
         mEvsStatusPref = prefSet.findPreference(KEY_EVS_STATUS);
+        mGnssXtraPref = prefSet.findPreference(KEY_GNSS_XTRA);
         mEmergencyWatchdogPref = prefSet.findPreference(KEY_EMERGENCY_WATCHDOG);
         mEwdNudgePref = prefSet.findPreference(KEY_EWD_NUDGE);
         mEwdNudgeMechPref = prefSet.findPreference(KEY_EWD_NUDGE_MECH);
@@ -205,6 +218,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mDataCentricPref.setChecked(SystemProperties.getBoolean(PROP_DATA_CENTRIC, true));
         mB12Pref.setChecked(SystemProperties.getBoolean(PROP_B12, false));
         mEvsPref.setChecked(SystemProperties.getBoolean(PROP_EVS, false));
+        mGnssXtraPref.setChecked(SystemProperties.getBoolean(PROP_GNSS_XTRA, true));
         // Off by default (ships disabled; Kyle 2026-10-11: keep it, off).
         mEmergencyWatchdogPref.setChecked(
                 SystemProperties.getBoolean(PROP_EMERGENCY_WATCHDOG, false));
@@ -219,6 +233,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         mDataCentricPref.setOnPreferenceChangeListener(this);
         mB12Pref.setOnPreferenceChangeListener(this);
         mEvsPref.setOnPreferenceChangeListener(this);
+        mGnssXtraPref.setOnPreferenceChangeListener(this);
         mEmergencyWatchdogPref.setOnPreferenceChangeListener(this);
         mEwdNudgePref.setOnPreferenceChangeListener(this);
         mEwdNudgeMechPref.setOnPreferenceChangeListener(this);
@@ -282,6 +297,12 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
             // modem_evs starts on the property change; pick up its "saving".
             mHandler.removeCallbacks(mEvsPoll);
             mHandler.postDelayed(mEvsPoll, B12_POLL_MS);
+            return true;
+        }
+
+        if (preference == mGnssXtraPref) {
+            SystemProperties.set(PROP_GNSS_XTRA, value);
+            promptReboot();
             return true;
         }
 
