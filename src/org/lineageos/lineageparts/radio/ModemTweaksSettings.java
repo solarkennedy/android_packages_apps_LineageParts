@@ -7,10 +7,12 @@ package org.lineageos.lineageparts.radio;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.PowerManager;
+import android.os.SystemClock;
 import android.os.SystemProperties;
 import android.telephony.ServiceState;
 import android.telephony.TelephonyManager;
@@ -139,6 +141,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private static final String PROP_B12_STATUS = "vendor.pepito.modem.b12";
     private static final String B12_SAVING = "saving";
     private static final long B12_POLL_MS = 5000;
+    /** modem_b12/modem_evs FLUSH_S (180 s) plus a margin: the save dialog's countdown. */
+    private static final long MODEM_SAVE_MS = 190_000;
 
     /**
      * EVS super-wideband switch, applied by the vendor oneshot modem_evs
@@ -435,17 +439,48 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
         }
     }
 
-    /** The modem-save wait dialog, shared by the B12 and EVS switches. */
+    /**
+     * The modem-save wait dialog, shared by the B12 and EVS switches: counts
+     * down the modem's EFS flush, then enables "Restart now". Restarting
+     * sooner loses the change, so the button stays off until then.
+     */
     private void showModemSavingDialog() {
         final Context context = getContext();
         if (context == null) {
             return;
         }
-        new AlertDialog.Builder(context)
+        final long deadline = SystemClock.elapsedRealtime() + MODEM_SAVE_MS;
+        final AlertDialog dialog = new AlertDialog.Builder(context)
                 .setTitle(R.string.modem_tweak_b12_dialog_title)
-                .setMessage(R.string.modem_tweak_b12_dialog_message)
-                .setPositiveButton(android.R.string.ok, null)
-                .show();
+                .setMessage(context.getString(R.string.modem_tweak_save_countdown, ""))
+                .setPositiveButton(R.string.go_tweaks_reboot_now, (d, which) -> {
+                    final PowerManager pm = context.getSystemService(PowerManager.class);
+                    if (pm != null) {
+                        pm.reboot(null);
+                    }
+                })
+                .setNegativeButton(R.string.go_tweaks_reboot_later, null)
+                .setCancelable(false)
+                .create();
+        final Runnable tick = new Runnable() {
+            @Override
+            public void run() {
+                final long left = deadline - SystemClock.elapsedRealtime();
+                if (left <= 0) {
+                    dialog.setMessage(context.getString(R.string.modem_tweak_save_done));
+                    dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
+                    return;
+                }
+                final long sec = (left + 999) / 1000;
+                dialog.setMessage(context.getString(R.string.modem_tweak_save_countdown,
+                        String.format("%d:%02d", sec / 60, sec % 60)));
+                mHandler.postDelayed(this, 1000);
+            }
+        };
+        dialog.setOnDismissListener(d -> mHandler.removeCallbacks(tick));
+        dialog.show();
+        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
+        tick.run();
     }
 
     /**
