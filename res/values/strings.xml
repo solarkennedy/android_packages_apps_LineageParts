@@ -205,6 +205,14 @@
     <string name="go_tweaks_reboot_now">Restart now</string>
     <string name="go_tweaks_reboot_later">Later</string>
 
+    <!-- PVG100 System Tweaks: clear the bootloader's sticky dm-verity logging state -->
+    <string name="go_tweaks_verity_category">Boot warning</string>
+    <string name="go_tweak_verity_reset_title">Clear \"device is corrupt\" warning</string>
+    <string name="go_tweak_verity_reset_summary">The bootloader is still in a dm-verity warning state (%1$s) from an earlier boot. Tap to clear it and restart.</string>
+    <string name="go_tweak_verity_reset_dialog_title">Clear boot warning?</string>
+    <string name="go_tweak_verity_reset_dialog_message">Your PVG100 will restart and tell the bootloader to put dm-verity back into enforcing mode. The red \"device is corrupt\" screen should not appear on later boots. Your data is not affected.</string>
+    <string name="go_tweak_verity_reset_confirm">Clear and restart</string>
+
     <!-- Battery light settings -->
     <string name="battery_light_title">Battery light</string>
     <string name="battery_light_enable_title">Enable battery light</string>

@@ -109,6 +109,8 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
     private static final String KEY_FLASH_POWER = "go_tweak_flash_power";
     private static final String KEY_PEPITOLAUNCHER2_INFO = "go_tweak_pepitolauncher2_info";
     private static final String KEY_PLAY_CERT_CATEGORY = "play_cert_category";
+    private static final String KEY_VERITY_CATEGORY = "go_tweaks_verity_category";
+    private static final String KEY_VERITY_RESET = "go_tweak_verity_reset";
     private static final String KEY_PLAY_CERT_STATUS = "play_cert_status";
     private static final String KEY_PLAY_CERT_ID = "play_cert_id";
     private static final String KEY_PLAY_CERT_REGISTER = "play_cert_register";
@@ -252,6 +254,7 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
         mBatterySaverGpuPref = prefSet.findPreference(KEY_BATTERY_SAVER_GPU);
         mFlashPowerPref = prefSet.findPreference(KEY_FLASH_POWER);
 
+        setUpVerityResetPref(prefSet);
         setUpPlayCertPrefs(prefSet);
         setUpGmsDozePref(prefSet);
         setUpWifiSwPnoPref(prefSet);
@@ -794,6 +797,50 @@ public class GoTweaksSettings extends SettingsPreferenceFragment implements
                 })
                 .setNegativeButton(R.string.go_tweaks_reboot_later, null)
                 .show();
+    }
+
+    /**
+     * The red "device is corrupt ... may not work properly" boot screen on a PVG100
+     * is LK's sticky devinfo verity_mode=0, left by an earlier "dm-verity device
+     * corrupted" reboot; no flash of boot/system/vendor/firmware clears it. Rebooting
+     * with reason "dm-verity enforcing" does: msm-poweroff maps it to restart reason
+     * 0x77665509 and aboot writes verity_mode=1, then boots normally.
+     * PowerManager.reboot() passes the reason through to sys.powerctl unchanged
+     * ("reboot,dm-verity enforcing"), the same value validated from recovery.
+     * The row only shows while the bootloader reports a non-enforcing mode.
+     */
+    private void setUpVerityResetPref(final PreferenceScreen prefSet) {
+        final PreferenceCategory category = prefSet.findPreference(KEY_VERITY_CATEGORY);
+        final Preference resetPref = prefSet.findPreference(KEY_VERITY_RESET);
+        if (category == null || resetPref == null) {
+            return;
+        }
+
+        final String mode = SystemProperties.get("ro.boot.veritymode", "");
+        if (TextUtils.isEmpty(mode) || "enforcing".equals(mode)) {
+            prefSet.removePreference(category);
+            return;
+        }
+
+        resetPref.setSummary(getString(R.string.go_tweak_verity_reset_summary, mode));
+        resetPref.setOnPreferenceClickListener(preference -> {
+            final Context context = getContext();
+            if (context == null) {
+                return true;
+            }
+            new AlertDialog.Builder(context)
+                    .setTitle(R.string.go_tweak_verity_reset_dialog_title)
+                    .setMessage(R.string.go_tweak_verity_reset_dialog_message)
+                    .setPositiveButton(R.string.go_tweak_verity_reset_confirm, (dialog, which) -> {
+                        final PowerManager pm = context.getSystemService(PowerManager.class);
+                        if (pm != null) {
+                            pm.reboot("dm-verity enforcing");
+                        }
+                    })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            return true;
+        });
     }
 
     private void updateFlashPowerSummary() {

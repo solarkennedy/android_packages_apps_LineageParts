@@ -7,6 +7,19 @@
     android:key="go_tweaks"
     android:title="@string/go_tweaks_title">
 
+    <!-- Removed at runtime unless the bootloader reports dm-verity in a mode other
+         than enforcing (the red "device is corrupt" boot screen). -->
+    <PreferenceCategory
+        android:key="go_tweaks_verity_category"
+        android:title="@string/go_tweaks_verity_category">
+
+        <Preference
+            android:key="go_tweak_verity_reset"
+            android:title="@string/go_tweak_verity_reset_title"
+            android:summary="@string/go_tweak_verity_reset_summary" />
+
+    </PreferenceCategory>
+
     <PreferenceCategory
         android:title="@string/go_tweaks_category">
 
