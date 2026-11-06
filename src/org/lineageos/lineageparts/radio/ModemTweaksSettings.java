@@ -191,6 +191,8 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     private SwitchPreferenceCompat mGnssXtraPref;
     private Preference mEvsStatusPref;
     private final Runnable mEvsPoll = this::refreshEvsStatus;
+    private AlertDialog mSaveDialog;
+    private Runnable mSaveTick;
     private SwitchPreferenceCompat mEmergencyWatchdogPref;
     private SwitchPreferenceCompat mEwdNudgePref;
     private ListPreference mEwdNudgeMechPref;
@@ -265,6 +267,21 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
     }
 
     @Override
+    public void onDestroy() {
+        // A rotation or leaving the screen takes the save dialog with it; stop
+        // its countdown too. The status row still says when to restart.
+        if (mSaveTick != null) {
+            mHandler.removeCallbacks(mSaveTick);
+            mSaveTick = null;
+        }
+        if (mSaveDialog != null) {
+            mSaveDialog.dismiss();
+            mSaveDialog = null;
+        }
+        super.onDestroy();
+    }
+
+    @Override
     public boolean onPreferenceChange(final Preference preference, final Object newValue) {
         // The one non-switch on this screen; its value is the property value.
         if (preference == mEwdNudgeMechPref) {
@@ -288,7 +305,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
         if (preference == mB12Pref) {
             SystemProperties.set(PROP_B12, value);
-            showModemSavingDialog();
+            showModemSavingDialog(PROP_B12_STATUS);
             // modem_b12 starts on the property change; pick up its "saving".
             mHandler.removeCallbacks(mB12Poll);
             mHandler.postDelayed(mB12Poll, B12_POLL_MS);
@@ -297,7 +314,7 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
         if (preference == mEvsPref) {
             SystemProperties.set(PROP_EVS, value);
-            showModemSavingDialog();
+            showModemSavingDialog(PROP_EVS_STATUS);
             // modem_evs starts on the property change; pick up its "saving".
             mHandler.removeCallbacks(mEvsPoll);
             mHandler.postDelayed(mEvsPoll, B12_POLL_MS);
@@ -441,13 +458,21 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
 
     /**
      * The modem-save wait dialog, shared by the B12 and EVS switches: counts
-     * down the modem's EFS flush, then enables "Restart now". Restarting
-     * sooner loses the change, so the button stays off until then.
+     * down the modem's EFS flush, then enables "Restart now" once the daemon's
+     * status (statusProp) has also left "saving" - a flip while an earlier save
+     * is still flushing starts a second save the countdown cannot see.
+     * Restarting sooner loses the change, so the button stays off until then.
      */
-    private void showModemSavingDialog() {
+    private void showModemSavingDialog(final String statusProp) {
         final Context context = getContext();
         if (context == null) {
             return;
+        }
+        if (mSaveTick != null) {
+            mHandler.removeCallbacks(mSaveTick);
+        }
+        if (mSaveDialog != null) {
+            mSaveDialog.dismiss();
         }
         final long deadline = SystemClock.elapsedRealtime() + MODEM_SAVE_MS;
         final AlertDialog dialog = new AlertDialog.Builder(context)
@@ -467,6 +492,11 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
             public void run() {
                 final long left = deadline - SystemClock.elapsedRealtime();
                 if (left <= 0) {
+                    if (B12_SAVING.equals(SystemProperties.get(statusProp, ""))) {
+                        dialog.setMessage(context.getString(R.string.modem_tweak_save_wait));
+                        mHandler.postDelayed(this, 2000);
+                        return;
+                    }
                     dialog.setMessage(context.getString(R.string.modem_tweak_save_done));
                     dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(true);
                     return;
@@ -477,7 +507,15 @@ public class ModemTweaksSettings extends SettingsPreferenceFragment implements
                 mHandler.postDelayed(this, 1000);
             }
         };
-        dialog.setOnDismissListener(d -> mHandler.removeCallbacks(tick));
+        dialog.setOnDismissListener(d -> {
+            mHandler.removeCallbacks(tick);
+            if (mSaveDialog == dialog) {
+                mSaveDialog = null;
+                mSaveTick = null;
+            }
+        });
+        mSaveDialog = dialog;
+        mSaveTick = tick;
         dialog.show();
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).setEnabled(false);
         tick.run();
